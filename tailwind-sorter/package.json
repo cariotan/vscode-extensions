@@ -9,6 +9,9 @@
     "categories": [
         "Formatters"
     ],
+    "activationEvents": [
+        "onCommand:tailwind-sorter.sortClasses"
+    ],
     "main": "./extension.js",
     "contributes": {
         "commands": [
