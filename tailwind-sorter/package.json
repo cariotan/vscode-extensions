@@ -1,0 +1,31 @@
+{
+  "name": "tailwind-sorter",
+  "displayName": "Tailwind Class Sorter",
+  "description": "Sorts Tailwind CSS classes based on custom preferences",
+  "version": "0.0.1",
+  "engines": {
+      "vscode": "^1.85.0"
+  },
+  "categories": [
+      "Formatters"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+      "commands": [
+          {
+              "command": "tailwind-sorter.sortClasses",
+              "title": "Sort Tailwind Classes"
+          }
+      ]
+  },
+  "scripts": {
+      "test": "node ./test/runTest.js"
+  },
+  "devDependencies": {
+      "vscode": "^1.1.37"
+  },
+  "dependencies": {
+    "@tailwindcss/cli": "^4.0.6",
+    "tailwindcss": "^4.0.6"
+  }
+}
