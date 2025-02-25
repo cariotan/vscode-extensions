@@ -16,20 +16,32 @@ function activate(context) {
         let htmlReplacements = 0;
         let jsReplacements = 0;
 
-        // Step 1: Convert HTML attribute quotes, preserving Razor expressions
-        const htmlAttrRegex = /(\w+)=("|')((?:@\(.*?\)|[^'"]*))\2/g;
+        // Step 1: Protect Razor expressions
+        const razorRegex = /@\([^)]*\)/g;
+        const razorPlaceholders = [];
+        newText = newText.replace(razorRegex, (match) => {
+            razorPlaceholders.push(match);
+            return `__RAZOR_${razorPlaceholders.length - 1}__`;
+        });
+
+        // Step 2: Convert HTML attribute quotes
+        const htmlAttrRegex = /(\w+)=("|')([^'"]*)\2/g;
         let match;
-        while ((match = htmlAttrRegex.exec(fullText)) !== null) {
+        while ((match = htmlAttrRegex.exec(newText)) !== null) {
             const [fullMatch, attrName, quoteType, content] = match;
             if (quoteType === '"') {
-                // Replace double quotes with single quotes, keeping content intact
                 const newAttr = `${attrName}='${content}'`;
                 newText = newText.replace(fullMatch, newAttr);
                 htmlReplacements++;
             }
         }
 
-        // Step 2: Convert JavaScript double quotes in <script> tags
+        // Step 3: Restore Razor expressions
+        razorPlaceholders.forEach((razor, index) => {
+            newText = newText.replace(`__RAZOR_${index}__`, razor);
+        });
+
+        // Step 4: Convert JavaScript double quotes in <script> tags
         const scriptTagRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
         newText = newText.replace(scriptTagRegex, (scriptTagMatch, scriptContent) => {
             if (!scriptContent.trim()) return scriptTagMatch;
