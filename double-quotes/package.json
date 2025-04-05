@@ -9,9 +9,6 @@
     "categories": [
         "Other"
     ],
-    "activationEvents": [
-        "onCommand:extension.convertHtmlQuotes"
-    ],
     "main": "./extension.js",
     "contributes": {
         "commands": [

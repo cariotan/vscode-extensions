@@ -42,16 +42,26 @@ function activate(context) {
         });
 
         // Step 4: Convert JavaScript double quotes in <script> tags
-        const scriptTagRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
-        newText = newText.replace(scriptTagRegex, (scriptTagMatch, scriptContent) => {
-            if (!scriptContent.trim()) return scriptTagMatch;
-            let updatedScript = scriptContent.replace(
+        if (['html', 'razor'].includes(document.languageId)) {
+            // Convert <script> tag content
+            const scriptTagRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+            newText = newText.replace(scriptTagRegex, (scriptTagMatch, scriptContent) => {
+                if (!scriptContent.trim()) return scriptTagMatch;
+                let updatedScript = scriptContent.replace(
+                    /(?<!\\)"([^"\n\r]*[^\\])"/g,
+                    (_, content) => `'${content}'`
+                );
+                jsReplacements += (scriptContent.match(/"([^"\n\r]*[^\\])"/g) || []).length;
+                return scriptTagMatch.replace(scriptContent, updatedScript);
+            });
+        } else if (['javascript', 'javascriptreact'].includes(document.languageId)) {
+            // Convert entire file if it's .js or .jsx
+            newText = newText.replace(
                 /(?<!\\)"([^"\n\r]*[^\\])"/g,
                 (_, content) => `'${content}'`
             );
-            jsReplacements += (scriptContent.match(/"([^"\n\r]*[^\\])"/g) || []).length;
-            return scriptTagMatch.replace(scriptContent, updatedScript);
-        });
+            jsReplacements += (fullText.match(/"([^"\n\r]*[^\\])"/g) || []).length;
+        }
 
         // Apply the changes
         editor.edit(editBuilder => {
