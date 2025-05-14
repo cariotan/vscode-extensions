@@ -1,0 +1,25 @@
+{
+    "name": "csharp-async-converter",
+    "displayName": "C# Async Converter",
+    "description": "Convert a C# function to async",
+    "version": "0.0.1",
+    "publisher": "cario-tan",
+    "engines": {
+        "vscode": "^1.100.0"
+    },
+    "activationEvents": [
+        "onCommand:extension.convertToAsync"
+    ],
+    "main": "./extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "extension.convertToAsync",
+                "title": "Convert C# Function to Async"
+            }
+        ]
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.100.0"
+    }
+}
