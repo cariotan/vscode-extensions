@@ -11,7 +11,7 @@ function activate(context) {
     const doc = editor.document;
     const cursorLine = editor.selection.active.line;
 
-    const methodRegex = /^([ \t]*)(public|private|protected|internal)?(?:\s+)?(static|virtual|override|sealed|unsafe|extern)?(?:\s+)?(\w+)\s+(\w+)\s*(\(.*)/;
+    const methodRegex = /^([ \t]*)(public|private|protected|internal)?(?:\s+)?(static|virtual|override|sealed|unsafe|extern)?(?:\s+)?([\w<>\[\]?]+)\s+(\w+)\s*(\(.*)/ ;
 
     let methodLine = null;
     for (let i = cursorLine; i >= 0; i--) {
