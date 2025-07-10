@@ -1,0 +1,31 @@
+{
+	"name": "format-tags",
+	"displayName": "Format Tags Content",
+	"description": "Formats each HTML tag content on a new line",
+	"version": "0.0.1",
+	"publisher": "your-name",
+	"engines": {
+		"vscode": "^1.70.0"
+	},
+	"activationEvents": [
+		"onCommand:formatTagsContent"
+	],
+	"main": "extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "formatTagsContent",
+				"title": "Format Tags Content"
+			}
+		],
+		"menus": {
+			"editor/context": [
+				{
+					"command": "formatTagsContent",
+					"when": "editorTextFocus",
+					"group": "modify"
+				}
+			]
+		}
+	}
+}
