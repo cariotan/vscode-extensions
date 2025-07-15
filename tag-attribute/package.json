@@ -1,0 +1,28 @@
+{
+  "name": "attribute-formatter",
+  "displayName": "Attribute Formatter",
+  "description": "Formats SVG tag attributes vertically aligned, keeping the first on the same line",
+  "version": "0.0.1",
+  "publisher": "your-name",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "activationEvents": [
+    "onCommand:attributeFormatter.formatSvgTag"
+  ],
+  "main": "extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "attributeFormatter.formatSvgTag",
+        "title": "Format SVG Tag"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npx vsce package"
+  },
+  "devDependencies": {
+    "vsce": "^2.15.0"
+  }
+}
