@@ -5,7 +5,7 @@
     "version": "0.0.1",
     "publisher": "cario-tan",
     "engines": {
-        "vscode": "^1.100.0"
+        "vscode": "^1.70.0"
     },
     "activationEvents": [
         "onCommand:extension.convertToAsync"
@@ -18,8 +18,5 @@
                 "title": "Convert C# Function to Async"
             }
         ]
-    },
-    "devDependencies": {
-        "@types/vscode": "^1.100.0"
     }
 }
