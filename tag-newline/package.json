@@ -1,0 +1,31 @@
+{
+  "name": "html-tag-newline",
+  "displayName": "HTML Tag Newline",
+  "description": "Places every HTML tag on its own line.",
+  "version": "0.0.1",
+  "publisher": "yourname",
+  "engines": {
+    "vscode": "^1.88.0"
+  },
+  "activationEvents": [
+    "onCommand:htmlTagNewline.format"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "htmlTagNewline.format",
+        "title": "HTML: Put each tag on its own line"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "htmlTagNewline.format",
+          "group": "modify"
+        }
+      ]
+    }
+  },
+  "dependencies": {}
+}
