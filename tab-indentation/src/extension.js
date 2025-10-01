@@ -1,37 +1,32 @@
 let vscode = require("vscode")
 
+let applyingEdit = false
+
 function activate(context) {
-	let disposable = vscode.commands.registerTextEditorCommand(
+	let sub = vscode.commands.registerTextEditorCommand(
 		"collapse-to-tab.fixDocument",
-		async (editor) => {
-			if (!editor) {
-				return
-			}
-
-			let doc = editor.document
-			let fullText = doc.getText()
-			let fullRange = new vscode.Range(doc.positionAt(0), doc.positionAt(fullText.length))
-
-			// Replace runs of 4 spaces or 4 tabs with tabs
-			let replaced = fullText.replace(/(?: {4})+|(?:\t{4})+/g, (m) => {
-				let groups = m.length / 4
-				return "\t".repeat(groups)
-			})
-
-			if (replaced === fullText) {
-				vscode.window.showInformationMessage("Collapse to Tab: No changes needed")
-				return
-			}
-
-			await editor.edit((editBuilder) => {
-				editBuilder.replace(fullRange, replaced)
-			})
-
-			vscode.window.showInformationMessage("Collapse to Tab: Document updated")
-		}
+		fixWholeDocument
 	)
+	context.subscriptions.push(sub)
+}
 
-	context.subscriptions.push(disposable)
+async function fixWholeDocument(editor) {
+	let doc = editor.document
+	let text = doc.getText()
+	let fullRange = new vscode.Range(doc.positionAt(0), doc.positionAt(text.length))
+
+	let replaced = text.replace(/\t{4}/g, "\t")
+	replaced = replaced.replace(/ {4}/g, "\t")
+
+	if (replaced === text) {
+		return
+	}
+
+	applyingEdit = true
+	await editor.edit(edit => {
+		edit.replace(fullRange, replaced)
+	})
+	applyingEdit = false
 }
 
 function deactivate() {}
