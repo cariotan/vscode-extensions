@@ -21,10 +21,10 @@ function activate(context) {
     //   2. Collapse any accidental whitespace around that boundary.
     //   3. Trim trailing spaces per line so we don’t leave junk behind.
     const transformed = original
-      .replace(/>\s*</g, '>\n<')   // step 1 & 2
-      .split('\n')
-      .map(l => l.trimEnd())       // step 3
-      .join('\n');
+      .replace(/>\s*<(?!\/)/g, ">\n<")
+      .split("\n")
+      .map(l => l.trimEnd())
+      .join("\n")
 
     await editor.edit(edit => edit.replace(targetRange, transformed));
   });
