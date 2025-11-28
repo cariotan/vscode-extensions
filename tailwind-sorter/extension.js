@@ -3,15 +3,16 @@ const vscode = require('vscode');
 
 // Your custom Tailwind class order (modify this array as per your preferences)
 const CLASS_ORDER = [
-    'hidden', 'block',
-    'self', 'container',
-    'static', 'relative', 'absolute', 'fixed', 'sticky', 'inset', 'top', 'bottom', 'left', 'right',
-    'animate', 'transition', 'translate', 'duration', 'opacity', 'scale', 'rotate', 'skew',
+    'hidden', 'block', 'table',
+    'self', 'container', 'col', 'row',
+    'static', 'relative', 'absolute', 'fixed', 'sticky', 'z', 'inset', 'top', 'bottom', 'left', 'right',
+    'animate', 'transition', 'origin', 'translate', 'duration', 'opacity', 'scale', 'rotate', 'skew',
+    'backdrop',
     'm', 'mx', 'my', 'ml', 'mr', 'mt', 'mb',
     'rounded', 'outline', 'ring', 'border',
     'list',
     'flex', 'grid', 'inline', 'visible',
-    'justify', 'items',
+    'justify', 'items', 'place', 'content',
     'gap', 'space',
     'w', 'h', 'min-w', 'min-h', 'max-w', 'max-h', 'size',
     'appearance',
@@ -20,11 +21,14 @@ const CLASS_ORDER = [
     'accent',
     'text-center', 'text-left', 'text-right',
     'text-xs', 'text-sm', 'text-md', 'text-lg', 'text-xl', 'text-2xl', 'text-3xl', 'text-4xl', 'text-5xl', 'text-6xl', 'text-7xl', 'text-8xl', 'text-9xl',
-    'text', 'font', 'leading', 'tracking',
-    'hover:', 'focus:',
+    'text', 'font', 'leading', 'tracking', 'uppercase', 'lowercase', 'capitalize', 'normal-case',
+    'overflow', 'shadow',
+    'cursor', 'select', 'scroll',
+    'hover:', 'focus:', 'active:',
     'data-',
-    'sm:', 'md:', 'lg:', 'xl:', '2xl:',
-    'max-sm:', 'max-md:', 'max-lg:', 'max-xl:', 'max-2xl:'
+    'sm:', 'md:', 'ml', 'lg:', 'lr', 'xl:', '2xl:',
+    'max-sm:', 'max-md:', 'max-ml', 'max-lg:', 'max-lr', 'max-xl:', 'max-2xl:',
+    'debug-ring'
 ];
 
 function sortTailwindClasses(classString) {
