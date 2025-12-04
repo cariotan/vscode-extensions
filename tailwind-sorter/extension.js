@@ -26,8 +26,8 @@ const CLASS_ORDER = [
     'cursor', 'select', 'scroll',
     'hover:', 'focus:', 'active:',
     'data-',
-    'sm:', 'md:', 'ml', 'lg:', 'lr', 'xl:', '2xl:',
-    'max-sm:', 'max-md:', 'max-ml', 'max-lg:', 'max-lr', 'max-xl:', 'max-2xl:',
+    'sm:', 'md:', 'ml:', 'lg:', 'lr:', 'xl:', '2xl:',
+    'max-sm:', 'max-md:', 'max-ml:', 'max-lg:', 'max-lr:', 'max-xl:', 'max-2xl:',
     'debug-ring'
 ];
 
