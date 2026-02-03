@@ -1,0 +1,29 @@
+{
+	"name": "signature-stacker",
+	"displayName": "Signature Stacker",
+	"version": "1.0.0",
+	"engines": {
+		"vscode": "^1.60.0"
+	},
+	"main": "./extension.js",
+	"activationEvents": [
+		"onCommand:extension.formatSignatureVertical"
+	],
+	"contributes": {
+		"commands": [
+			{
+				"command": "extension.formatSignatureVertical",
+				"title": "Stack Signature Vertically"
+			}
+		],
+		"menus": {
+			"editor/context": [
+				{
+					"command": "extension.formatSignatureVertical",
+					"group": "modification",
+					"when": "editorTextFocus"
+				}
+			]
+		}
+	}
+}
