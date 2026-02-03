@@ -1,0 +1,30 @@
+{
+	"name": "split-attribute",
+	"displayName": "Split Attribute",
+	"version": "1.2.0",
+	"publisher": "local-dev",
+	"engines": {
+		"vscode": "^1.60.0"
+	},
+	"activationEvents": [
+		"onCommand:split-attribute.format"
+	],
+	"main": "./extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "split-attribute.format",
+				"title": "Split Attribute"
+			}
+		],
+		"menus": {
+			"editor/context": [
+				{
+					"command": "split-attribute.format",
+					"group": "modification",
+					"when": "editorTextFocus"
+		 		}
+			]
+		}
+	}
+}
