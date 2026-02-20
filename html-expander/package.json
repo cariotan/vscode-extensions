@@ -1,0 +1,27 @@
+{
+	"name": "html-expander",
+	"displayName": "HTML Expander",
+	"version": "0.0.1",
+	"engines": {
+		"vscode": "^1.80.0"
+	},
+	"main": "./extension.js",
+	"activationEvents": [],
+	"contributes": {
+		"commands": [
+			{
+				"command": "html-expander.expandTag",
+				"title": "Expand HTML Tag"
+			}
+		],
+		"menus": {
+			"editor/context": [
+				{
+					"command": "html-expander.expandTag",
+					"group": "modification",
+					"when": "editorTextFocus"
+				}
+			]
+		}
+	}
+}
