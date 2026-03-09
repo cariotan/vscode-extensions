@@ -1,0 +1,34 @@
+{
+ "name": "controller-action-jumper",
+ "displayName": "Controller Action Jumper",
+ "version": "1.3.0",
+ "publisher": "local-dev",
+ "engines": {
+  "vscode": "^1.60.0"
+ },
+ "main": "./extension.js",
+ "activationEvents": [
+  "onCommand:controller-action-jumper.jump"
+ ],
+ "contributes": {
+  "commands": [
+   {
+    "command": "controller-action-jumper.jump",
+    "title": "Jump to View/Controller"
+   }
+  ],
+  "menus": {
+   "editor/context": [
+    {
+     "when": "resourceExtname == .cshtml || resourceExtname == .cs",
+     "command": "controller-action-jumper.jump",
+     "group": "navigation"
+    }
+   ]
+  }
+ },
+ "repository": {
+  "type": "git",
+  "url": "https://github.com/local/controller-action-jumper"
+ }
+}
