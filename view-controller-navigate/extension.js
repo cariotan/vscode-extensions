@@ -1,72 +1,45 @@
 const vscode = require('vscode')
 const path = require('path')
+const fs = require('fs')
 
+/**
+ * @param {vscode.ExtensionContext} context
+ */
 function activate(context) {
  let disposable = vscode.commands.registerCommand('extension.toggleViewControl', async function () {
   const editor = vscode.window.activeTextEditor
-
   if (!editor) return
 
-  const fileName = editor.document.fileName
-  const isView = fileName.endsWith('.cshtml')
-  const isController = fileName.endsWith('Controller.cs')
+  const filePath = editor.document.fileName
+  const isController = filePath.endsWith('Controller.cs')
+  const isView = filePath.endsWith('.cshtml')
 
-  if (!isView && !isController) {
-   vscode.window.showWarningMessage('Not a .cshtml or Controller.cs file.')
-   return
-  }
+  let targetPath
 
-  const pathParts = fileName.split(path.sep)
-  const areasIndex = pathParts.lastIndexOf('Areas')
-  let searchPattern
-
-  if (isView) {
-   const viewsIndex = pathParts.lastIndexOf('Views')
-   if (viewsIndex === -1) return
+  if (isController) {
+   const controllerName = path.basename(filePath, 'Controller.cs')
    
-   const controllerFolderName = pathParts[viewsIndex + 1]
-   const targetFile = `${controllerFolderName}Controller.cs`
+   targetPath = filePath
+    .replace(`${path.sep}Controllers${path.sep}`, `${path.sep}Views${path.sep}`)
+    .replace(`${controllerName}Controller.cs`, path.join(controllerName, 'Index.cshtml'))
+  } 
+  else if (isView) {
+   const segments = filePath.split(path.sep)
+   const viewsIndex = segments.lastIndexOf('Views')
 
-   if (areasIndex !== -1 && viewsIndex > areasIndex) {
-    const areaName = pathParts[areasIndex + 1]
-    searchPattern = `**/Areas/${areaName}/Controllers/${targetFile}`
-   } else {
-    searchPattern = `**/Controllers/${targetFile}`
-   }
-  } else {
-   const controllerName = pathParts[pathParts.length - 1].replace('Controller.cs', '')
-   const targetFile = 'Index.cshtml'
-
-   if (areasIndex !== -1) {
-    const areaName = pathParts[areasIndex + 1]
-    searchPattern = `**/Areas/${areaName}/Views/${controllerName}/${targetFile}`
-   } else {
-    searchPattern = `**/Views/${controllerName}/${targetFile}`
+   if (viewsIndex !== -1 && segments.length > viewsIndex + 1) {
+    const controllerName = segments[viewsIndex + 1]
+    const rootPath = segments.slice(0, viewsIndex).join(path.sep)
+    
+    targetPath = path.join(rootPath, 'Controllers', `${controllerName}Controller.cs`)
    }
   }
 
-  const files = await vscode.workspace.findFiles(searchPattern, null, 1)
-
-  if (files && files.length > 0) {
-   const doc = await vscode.workspace.openTextDocument(files[0])
-   const visibleEditors = vscode.window.visibleTextEditors
-   let targetColumn
-
-   if (visibleEditors.length > 1) {
-    // If we have 2 panes, find the one that isn't the active one
-    const currentColumn = editor.viewColumn
-    targetColumn = currentColumn === vscode.ViewColumn.One ? vscode.ViewColumn.Two : vscode.ViewColumn.One
-   } else {
-    // If only 1 pane, open beside
-    targetColumn = vscode.ViewColumn.Beside
-   }
-
-   await vscode.window.showTextDocument(doc, {
-    viewColumn: targetColumn,
-    preserveFocus: false
-   })
-  } else {
-   vscode.window.showErrorMessage('Could not find the corresponding file.')
+  if (targetPath && fs.existsSync(targetPath)) {
+   const doc = await vscode.workspace.openTextDocument(targetPath)
+   await vscode.window.showTextDocument(doc)
+  } else if (targetPath) {
+   vscode.window.showErrorMessage(`Target not found: ${path.basename(targetPath)}`)
   }
  })
 
