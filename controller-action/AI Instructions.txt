@@ -1,0 +1,9 @@
+If the command is activated in .cshtml file
+
+Url.Action("Action", "Controller") Go to controller folder and scroll to action
+Url.Action("Action") infer controller from view folder, go to controller folder, and scroll to action
+<partial name='_AppointmentSteps' model='@Model' />, firstly, search for the partial file in the same folder, and then search in shared folder if not exist.
+
+If the command is activated in a .cs file
+
+
