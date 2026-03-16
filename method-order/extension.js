@@ -24,7 +24,8 @@ function activate(context)
    let line = lines[i]
    let match = line.match(/^([ \t]*)(public|private|protected|internal)?\s*(?:(?:static|async|override|virtual|new|sealed|partial|unsafe)\s+)*[\w<>\[\]\?]+\s+([\w]+)\s*\(/)
 
-   if(match && !line.includes('=') && !line.includes('class ') && !line.includes('struct '))
+   // FIX: Removed !line.includes('=') so methods with default parameters are captured.
+   if(match && !line.includes('class ') && !line.includes('struct ') && !line.includes('record ') && !line.includes('interface '))
    {
     let visibility = match[2] || 'private'
     let methodName = match[3]
@@ -146,10 +147,7 @@ function activate(context)
 
   let finalDocText = newDocLines.join(newline).replace("___INSERT_METHODS_HERE___", sortedText)
   
-  // Collapse those huge gaps of empty lines into single empty lines
   finalDocText = finalDocText.replace(/(\r?\n\s*){3,}/g, newline + newline)
-  
-  // NEW: Remove any empty line sitting directly above a closing brace
   finalDocText = finalDocText.replace(/(?:\r?\n[ \t]*)+\r?\n([ \t]*})/g, newline + '$1')
 
   editor.edit(editBuilder =>
