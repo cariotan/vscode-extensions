@@ -13,7 +13,8 @@ Act as an expert VS Code extension developer. I need you to write a VS Code exte
 Check the text on the line where the cursor is currently placed. Use completely separate `if` branches for each of these:
 
 * Url.Action with 2 parameters: e.g., `Url.Action("ActionName", "ControllerName")`. Jump to `ControllerNameController.cs` in the appropriate Controllers folder, and scroll to the `ActionName` method signature.
-* Url.Action with 1 parameter: e.g., `Url.Action("ActionName")`. Infer the controller name from the folder the current `.cshtml` file is in. Jump to that controller file, and scroll to the `ActionName` method signature.
+* Url.ActionNotification with 1 parameter: e.g., `Url.Action("ActionName")`. Infer the controller name from the folder the current `.cshtml` file is in. Jump to that controller file, and scroll to the `ActionName` method signature.
+* Url.Action can also contain anonymous object as a parameter. Eg Url.Action("ActionName", new { Id = 10 }) and Url.Action("ActionName", "ControllerName", new { Id = 10 }).
 * Partial Tags: e.g., `<partial name='_PartialName' ... />`. Extract the partial name. First, search for `_PartialName.cshtml` in the exact same folder as the active file. If it doesn't exist, search the `Shared` folder (check the Area's Shared folder first if applicable, then the Root's Shared folder). Jump to it.
 
 ### SCENARIO 2: Command activated inside a `.cs` file
