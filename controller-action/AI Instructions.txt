@@ -1,9 +1,27 @@
-If the command is activated in .cshtml file
+Act as an expert VS Code extension developer. I need you to write a VS Code extension command named `controller-action-jumper.jump`. This extension helps ASP.NET Core MVC developers navigate between C# controllers and Razor views.
 
-Url.Action("Action", "Controller") Go to controller folder and scroll to action
-Url.Action("Action") infer controller from view folder, go to controller folder, and scroll to action
-<partial name='_AppointmentSteps' model='@Model' />, firstly, search for the partial file in the same folder, and then search in shared folder if not exist.
+### STRICT CODING STANDARDS (CRITICAL)
+1. Indentation: You MUST use exactly ONE SPACE for indentation for everything. Do not use tabs, do not use 2 spaces, do not use 4 spaces.
+2. No Semicolons: Do not use semicolons at the end of your lines. Rely on automatic semicolon insertion.
+3. Architecture: Do not combine logic into a "Frankenstein" structure. Each detection scenario must be its own completely independent `if` branch. Write reusable helper functions for the actual file searching and jumping, and call them from within these independent branches. 
+4. Pane Awareness: Do not try to split panes. Just open the target document in whatever active pane the user is currently viewing.
 
-If the command is activated in a .cs file
+### CORE BEHAVIOR & CONTEXT
+- The extension must be "Area Aware." If the user triggers the command from a file inside an `Areas/AreaName/` folder, prioritize searching within that specific Area's `Controllers` or `Views` folders before falling back to the root project's `Controllers` or `Views` folders.
 
+### SCENARIO 1: Command activated inside a `.cshtml` file
+Check the text on the line where the cursor is currently placed. Use completely separate `if` branches for each of these:
 
+* Url.Action with 2 parameters: e.g., `Url.Action("ActionName", "ControllerName")`. Jump to `ControllerNameController.cs` in the appropriate Controllers folder, and scroll to the `ActionName` method signature.
+* Url.Action with 1 parameter: e.g., `Url.Action("ActionName")`. Infer the controller name from the folder the current `.cshtml` file is in. Jump to that controller file, and scroll to the `ActionName` method signature.
+* Partial Tags: e.g., `<partial name='_PartialName' ... />`. Extract the partial name. First, search for `_PartialName.cshtml` in the exact same folder as the active file. If it doesn't exist, search the `Shared` folder (check the Area's Shared folder first if applicable, then the Root's Shared folder). Jump to it.
+
+### SCENARIO 2: Command activated inside a `.cs` file
+Check the text on the line where the cursor is currently placed for the following method calls: `View`, `PartialView`, `RedirectToAction`, or `Url.Action`. Use completely separate `if` branches for each method name. 
+
+For whichever method is detected, apply the following logic based on its arguments:
+* Zero arguments (e.g., `View()`) or One non-string argument (e.g., `View(model)`): Parse the `.cs` file to extract the name of the current action method the cursor is inside. Go to the Views folder that matches the current Controller's name, and open the `.cshtml` file matching the extracted action method name.
+* One string argument (e.g., `View("ActionName")`): Go to the Views folder that matches the current Controller's name, and open the `.cshtml` file matching the string argument.
+* Two string arguments (e.g., `View("ActionName", "ControllerName")`): Use the second argument to find the target Views folder, and open the `.cshtml` file matching the first argument.
+
+Please output the complete JavaScript code for the `activate` function meeting all these requirements.
