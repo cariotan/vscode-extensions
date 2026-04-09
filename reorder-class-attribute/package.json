@@ -1,0 +1,67 @@
+{
+ "name": "reorder-class-attribute",
+ "displayName": "Reorder Class Attribute",
+ "description": "Reorders class and style attributes within vertically stacked HTML tags.",
+ "version": "0.0.1",
+ "engines": {
+  "vscode": "^1.80.0"
+ },
+ "categories": [
+  "Formatters"
+ ],
+ "activationEvents": [],
+ "main": "./extension.js",
+ "contributes": {
+  "commands": [
+   {
+    "command": "reorder-class-attribute.reorder",
+    "title": "Reorder Class Attribute"
+   }
+  ],
+  "menus": {
+   "editor/context": [
+    {
+     "command": "reorder-class-attribute.reorder",
+     "group": "modification",
+					"when": "editorTextFocus"
+    }
+   ]
+  },
+  "configuration": {
+   "title": "Reorder Class Attribute",
+   "properties": {
+    "reorderClassAttribute.priorityAttributes": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "default": [
+      "id",
+      "type",
+      "value",
+      "src",
+      "alt",
+      "name",
+      "placeholder",
+      "required",
+      "disabled",
+      "readonly",
+      "maxlength",
+      "min",
+      "max",
+      "pattern",
+      "width",
+      "height",
+      "loading",
+      "srcset",
+						"asp-*",
+						"data-*",
+						"href",
+						"target"
+     ],
+     "description": "List of attributes that the class attribute should be placed underneath."
+    }
+   }
+  }
+ }
+}
