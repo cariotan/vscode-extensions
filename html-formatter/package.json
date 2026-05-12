@@ -1,0 +1,29 @@
+{
+ "name": "html-formatter",
+ "displayName": "HTML Formatter",
+ "version": "0.0.2",
+ "engines": {
+  "vscode": "^1.80.0"
+ },
+ "activationEvents": [
+  "onCommand:html-formatter.formatSelection"
+ ],
+ "main": "./extension.js",
+ "contributes": {
+  "commands": [
+   {
+    "command": "html-formatter.formatSelection",
+    "title": "Format HTML (Custom)"
+   }
+  ],
+  "menus": {
+   "editor/context": [
+    {
+     "command": "html-formatter.formatSelection",
+     "when": "editorHasSelection",
+     "group": "1_modification"
+    }
+   ]
+  }
+ }
+}
