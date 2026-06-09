@@ -1,0 +1,28 @@
+{
+ "name": "actor-navigator",
+ "displayName": "Actor Navigator",
+ "description": "Navigate from controller to actor receive block",
+ "version": "1.0.0",
+ "engines": {
+  "vscode": "^1.70.0"
+ },
+ "main": "./main.js",
+ "activationEvents": [],
+ "contributes": {
+  "commands": [
+   {
+    "command": "actorNav.go",
+    "title": "Go to Actor Receive"
+   }
+  ],
+  "menus": {
+   "editor/context": [
+    {
+     "command": "actorNav.go",
+     "when": "editorTextFocus",
+     "group": "navigation"
+    }
+   ]
+  }
+ }
+}
