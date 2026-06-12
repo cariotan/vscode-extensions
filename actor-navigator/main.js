@@ -13,57 +13,68 @@ function activate(context) {
   let position = editor.selection.active
   let lineText = document.lineAt(position.line).text
 
-  let match = lineText.match(/([a-zA-Z0-9_]*Actor[a-zA-Z0-9_]*)\.([a-zA-Z0-9_]+)/)
-  if (!match) {
-   vscode.window.showInformationMessage('Could not find actor message format on this line')
+  let actorMatch = lineText.match(/([a-zA-Z0-9_]*Actor[a-zA-Z0-9_]*)\.([a-zA-Z0-9_]+)/)
+  let recordMatch = lineText.match(/(?:record|class|struct)\s+([a-zA-Z0-9_]+)/)
+
+  if (!actorMatch && !recordMatch) {
+   vscode.window.showInformationMessage('Could not find actor message format or record definition on this line')
    return
   }
 
-  let actorName = match[1]
-  let messageName = match[2]
+  if (actorMatch) {
+   let actorName = actorMatch[1]
+   let messageName = actorMatch[2]
 
-  let currentDir = path.dirname(document.uri.fsPath)
-  let parentDir = path.dirname(currentDir)
-  
-  let actorFolder = path.join(parentDir, 'actors')
-  if (!fs.existsSync(actorFolder)) {
-   actorFolder = path.join(parentDir, 'Actors')
-  }
-
-  let actorFile = path.join(actorFolder, actorName + '.cs')
-
-  if (!fs.existsSync(actorFile)) {
-   vscode.window.showErrorMessage('Actor file not found in sibling directory: ' + actorFile)
-   return
-  }
-
-  let doc = await vscode.workspace.openTextDocument(actorFile)
-  let newEditor = await vscode.window.showTextDocument(doc)
-
-  let text = doc.getText()
-  let lines = text.split('\n')
-  let targetLine = -1
-  
-  let regex = new RegExp('(?:Receive|Command|Recover)(?:Async)?< *' + messageName + ' *>')
-
-  for (let i = 0; i < lines.length; i++) {
-   if (regex.test(lines[i])) {
-    targetLine = i
-    break
+   let currentDir = path.dirname(document.uri.fsPath)
+   let parentDir = path.dirname(currentDir)
+   
+   let actorFolder = path.join(parentDir, 'actors')
+   if (!fs.existsSync(actorFolder)) {
+    actorFolder = path.join(parentDir, 'Actors')
    }
-  }
 
-  if (targetLine !== -1) {
-   let targetPos = new vscode.Position(targetLine, 0)
-   let range = new vscode.Range(targetPos, targetPos)
-   newEditor.selection = new vscode.Selection(targetPos, targetPos)
-   newEditor.revealRange(range, vscode.TextEditorRevealType.InCenter)
-  } else {
-   vscode.window.showInformationMessage('Could not find message target for ' + messageName)
+   let actorFile = path.join(actorFolder, actorName + '.cs')
+
+   if (!fs.existsSync(actorFile)) {
+    vscode.window.showErrorMessage('Actor file not found in sibling directory: ' + actorFile)
+    return
+   }
+
+   let doc = await vscode.workspace.openTextDocument(actorFile)
+   let newEditor = await vscode.window.showTextDocument(doc)
+
+   findAndNavigateToHandler(newEditor, doc, messageName)
+  } else if (recordMatch) {
+   let messageName = recordMatch[1]
+   findAndNavigateToHandler(editor, document, messageName)
   }
  })
 
  context.subscriptions.push(disposable)
+}
+
+function findAndNavigateToHandler(editor, document, messageName) {
+ let text = document.getText()
+ let lines = text.split('\n')
+ let targetLine = -1
+ 
+ let regex = new RegExp('(?:Receive|Command|Recover)(?:Async)?< *' + messageName + ' *>')
+
+ for (let i = 0; i < lines.length; i++) {
+  if (regex.test(lines[i])) {
+   targetLine = i
+   break
+  }
+ }
+
+ if (targetLine !== -1) {
+  let targetPos = new vscode.Position(targetLine, 0)
+  let range = new vscode.Range(targetPos, targetPos)
+  editor.selection = new vscode.Selection(targetPos, targetPos)
+  editor.revealRange(range, vscode.TextEditorRevealType.InCenter)
+ } else {
+  vscode.window.showInformationMessage('Could not find message target for ' + messageName)
+ }
 }
 
 function deactivate() {}
