@@ -2,7 +2,7 @@
  "name": "actor-navigator",
  "displayName": "Actor Navigator",
  "description": "Navigate from controller to actor receive block",
- "version": "1.0.0",
+ "version": "1.1.0",
  "engines": {
   "vscode": "^1.70.0"
  },
