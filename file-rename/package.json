@@ -1,0 +1,43 @@
+{
+ "name": "file-rename",
+ "displayName": "File Rename",
+ "description": "Smartly rename files with automated casing suggestions based on language settings.",
+ "version": "1.0.0",
+ "publisher": "AI",
+ "engines": {
+  "vscode": "^1.75.0"
+ },
+ "categories": [
+  "Other"
+ ],
+ "activationEvents": [],
+ "main": "./extension.js",
+ "contributes": {
+  "commands": [
+   {
+    "command": "editor.renameFile",
+    "title": "Rename File"
+   },
+   {
+    "command": "editor.renameFileSmart",
+    "title": "Rename File (Smart Suggest)"
+   }
+  ],
+  "configuration": {
+   "type": "object",
+   "title": "File Rename Configuration",
+   "properties": {
+    "renameFile.languageNamingStyles": {
+     "type": "object",
+     "default": {
+      "*": "pascalCase",
+      "typescript": "camelCase",
+      "javascript": "camelCase",
+      "python": "snake_case"
+     },
+     "description": "Configure default naming style per language ID or wildcard (*)."
+    }
+   }
+  }
+ }
+}
