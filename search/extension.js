@@ -10,17 +10,40 @@ function getVersionNumber(filePath) {
 function activate(context) {
  let cachedFiles = [];
 
- vscode.workspace.findFiles("**/*", "{**/node_modules/**,**/.git/**}").then(files => {
-  console.log(`[CustomSearch] Cached ${files.length} workspace files.`);
-  cachedFiles = files;
+ function refreshFiles() {
+  vscode.workspace.findFiles("**/*", "{**/node_modules/**,**/.git/**}").then(files => {
+   console.log(`[CustomSearch] Cached ${files.length} workspace files.`);
+   cachedFiles = files;
+  });
+ }
+
+ refreshFiles();
+
+ const watcher = vscode.workspace.createFileSystemWatcher("**/*");
+ watcher.onDidCreate(uri => {
+  if (!cachedFiles.some(f => f.toString() === uri.toString())) {
+   cachedFiles.push(uri);
+  }
  });
+ watcher.onDidDelete(uri => {
+  cachedFiles = cachedFiles.filter(f => f.toString() !== uri.toString());
+ });
+
+ context.subscriptions.push(watcher);
 
  let disposable = vscode.commands.registerCommand("customSearch.start", () => {
   const quickPick = vscode.window.createQuickPick();
-  quickPick.placeholder = "Type to search files, or add # to search symbols...";
+  quickPick.placeholder = "Type to search files, # for symbols, or > for commands...";
 
   quickPick.onDidChangeValue(async (value) => {
    console.log(`[CustomSearch] Input changed: "${value}"`);
+
+   if (value.startsWith(">")) {
+    quickPick.hide();
+    vscode.commands.executeCommand("workbench.action.showCommands");
+    return;
+   }
+
    const hasSymbolTrigger = value.includes("#");
    const cleanQuery = value.replaceAll("#", " ");
 
