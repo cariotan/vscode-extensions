@@ -1,7 +1,7 @@
 {
  "name": "custom-quick-open",
  "displayName": "Custom Quick Open",
- "version": "0.0.6",
+ "version": "0.0.7",
  "engines": {
   "vscode": "^1.80.0"
  },
@@ -22,8 +22,8 @@
      "items": {
       "type": "string"
      },
-     "default": [".ts", ".js"],
-     "description": "File extensions to sort at the top of file search results (e.g. .ts, .js)."
+     "default": [".cshtml", ".cs"],
+     "description": "File extensions to sort at the top of file search results (e.g. .cshtml, .cs)."
     },
     "customSearch.lowPriorityExtensions": {
      "type": "array",
