@@ -1,5 +1,12 @@
 const vscode = require("vscode");
 
+function getVersionNumber(filePath) {
+ const matches = filePath.match(/v(\d+)/gi);
+ if (!matches) return 0;
+ const numbers = matches.map(m => parseInt(m.slice(1), 10));
+ return Math.max(...numbers);
+}
+
 function activate(context) {
  let cachedFiles = [];
 
@@ -15,35 +22,34 @@ function activate(context) {
   quickPick.onDidChangeValue(async (value) => {
    console.log(`[CustomSearch] Input changed: "${value}"`);
    const hasSymbolTrigger = value.includes("#");
-   // Replace # with a space so "ind#holler" becomes two terms: "ind" and "holler"
    const cleanQuery = value.replaceAll("#", " ");
 
    if (hasSymbolTrigger) {
     quickPick.busy = true;
     try {
      const terms = cleanQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
-     
-     // 1. Query the provider with only the first term to cast a wide net.
-     // Passing all terms might cause the language server to return nothing.
      const providerQuery = terms[0] || "";
      console.log(`[CustomSearch] Triggering workspace symbol search for: "${providerQuery}"`);
-     
+
      const symbols = await vscode.commands.executeCommand(
       "vscode.executeWorkspaceSymbolProvider",
       providerQuery
      );
 
      if (symbols && symbols.length > 0) {
-      // 2. Build the same regex pattern used for file searching
       const pattern = terms.map(term => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*");
       const regex = new RegExp(pattern, "i");
 
-      // 3. Filter symbols combining the symbol name, container, and file path
       const filteredSymbols = symbols
        .filter(sym => {
         const relativePath = vscode.workspace.asRelativePath(sym.location.uri);
         const searchableTarget = `${sym.name} ${sym.containerName || ""} ${relativePath}`;
         return regex.test(searchableTarget);
+       })
+       .sort((a, b) => {
+        const relA = vscode.workspace.asRelativePath(a.location.uri);
+        const relB = vscode.workspace.asRelativePath(b.location.uri);
+        return getVersionNumber(relB) - getVersionNumber(relA);
        })
        .slice(0, 100);
 
@@ -81,6 +87,11 @@ function activate(context) {
       const dirPath = parts.join("/");
       const searchableTarget = `${fileName} ${dirPath}`;
       return regex.test(searchableTarget);
+     })
+     .sort((a, b) => {
+      const relA = vscode.workspace.asRelativePath(a);
+      const relB = vscode.workspace.asRelativePath(b);
+      return getVersionNumber(relB) - getVersionNumber(relA);
      })
      .slice(0, 100);
 
