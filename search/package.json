@@ -1,7 +1,7 @@
 {
  "name": "custom-quick-open",
  "displayName": "Custom Quick Open",
- "version": "0.0.5",
+ "version": "0.0.6",
  "engines": {
   "vscode": "^1.80.0"
  },
@@ -13,6 +13,27 @@
     "command": "customSearch.start",
     "title": "Custom Search: Files or Symbols"
    }
-  ]
+  ],
+  "configuration": {
+   "title": "Custom Search",
+   "properties": {
+    "customSearch.highPriorityExtensions": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "default": [".ts", ".js"],
+     "description": "File extensions to sort at the top of file search results (e.g. .ts, .js)."
+    },
+    "customSearch.lowPriorityExtensions": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "default": [".map", ".log"],
+     "description": "File extensions to sort at the bottom of file search results (e.g. .map, .log)."
+    }
+   }
+  }
  }
 }

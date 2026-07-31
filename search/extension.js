@@ -7,6 +7,27 @@ function getVersionNumber(filePath) {
  return Math.max(...numbers);
 }
 
+function getExtensionPriorityScore(uri, highPriorityExts, lowPriorityExts) {
+ const path = uri.path.toLowerCase();
+
+ // Check high priority list
+ const isHighPriority = highPriorityExts.some(ext => {
+  const normalized = ext.startsWith(".") ? ext.toLowerCase() : `.${ext.toLowerCase()}`;
+  return path.endsWith(normalized);
+ });
+ if (isHighPriority) return 1;
+
+ // Check low priority list
+ const isLowPriority = lowPriorityExts.some(ext => {
+  const normalized = ext.startsWith(".") ? ext.toLowerCase() : `.${ext.toLowerCase()}`;
+  return path.endsWith(normalized);
+ });
+ if (isLowPriority) return -1;
+
+ // Normal priority
+ return 0;
+}
+
 function activate(context) {
  let cachedFiles = [];
 
@@ -34,6 +55,11 @@ function activate(context) {
  let disposable = vscode.commands.registerCommand("customSearch.start", () => {
   const quickPick = vscode.window.createQuickPick();
   quickPick.placeholder = "Type to search files, # for symbols, or > for commands...";
+
+  // Read current setting configuration
+  const config = vscode.workspace.getConfiguration("customSearch");
+  const highPriorityExts = config.get("highPriorityExtensions", []);
+  const lowPriorityExts = config.get("lowPriorityExtensions", []);
 
   quickPick.onDidChangeValue(async (value) => {
    console.log(`[CustomSearch] Input changed: "${value}"`);
@@ -108,10 +134,19 @@ function activate(context) {
       const parts = relativePath.split("/");
       const fileName = parts.pop() || relativePath;
       const dirPath = parts.join("/");
-      const searchableTarget = `${fileName} ${dirPath}`;
+      const searchableTarget = `${fileName} ${dirPath} ${fileName}`;
       return regex.test(searchableTarget);
      })
      .sort((a, b) => {
+      // Priority tier ranking: High (+1), Normal (0), Low (-1)
+      const priorityA = getExtensionPriorityScore(a, highPriorityExts, lowPriorityExts);
+      const priorityB = getExtensionPriorityScore(b, highPriorityExts, lowPriorityExts);
+
+      if (priorityA !== priorityB) {
+       return priorityB - priorityA;
+      }
+
+      // Fallback to version number sorting within the same priority tier
       const relA = vscode.workspace.asRelativePath(a);
       const relB = vscode.workspace.asRelativePath(b);
       return getVersionNumber(relB) - getVersionNumber(relA);

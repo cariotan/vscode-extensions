@@ -1,0 +1,24 @@
+{
+  "name": "html-attribute-stacker",
+  "displayName": "HTML Attribute Stacker",
+  "description": "Vertically stacks HTML attributes with proper indentation",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Formatters"
+  ],
+  "activationEvents": [
+    "onCommand:html-attribute-stacker.stack"
+  ],
+  "main": "./main.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "html-attribute-stacker.stack",
+        "title": "Stack HTML Attributes"
+      }
+    ]
+  }
+}
