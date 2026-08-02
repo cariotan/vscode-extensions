@@ -1,7 +1,7 @@
 {
  "name": "custom-quick-open",
  "displayName": "Custom Quick Open",
- "version": "0.0.7",
+ "version": "0.0.8",
  "engines": {
   "vscode": "^1.80.0"
  },
@@ -17,21 +17,29 @@
   "configuration": {
    "title": "Custom Search",
    "properties": {
-    "customSearch.highPriorityExtensions": {
+    "customSearch.highPriorityWords": {
      "type": "array",
      "items": {
       "type": "string"
      },
-     "default": [".cshtml", ".cs"],
-     "description": "File extensions to sort at the top of file search results (e.g. .cshtml, .cs)."
+     "default": [".cshtml", ".cs", "/views"],
+     "description": "Words or paths to sort at the top of file search results (e.g. .cshtml, /views)."
     },
-    "customSearch.lowPriorityExtensions": {
+    "customSearch.lowPriorityWords": {
      "type": "array",
      "items": {
       "type": "string"
      },
-     "default": [".map", ".log"],
-     "description": "File extensions to sort at the bottom of file search results (e.g. .map, .log)."
+     "default": [".map", ".log", "/wwwroot"],
+     "description": "Words or paths to sort at the bottom of file search results (e.g. .map, /wwwroot)."
+    },
+    "customSearch.excludePatterns": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "default": ["**/node_modules/**", "**/.git/**", "**/bin/**", "**/obj/**"],
+     "description": "Glob patterns to fully exclude from file search."
     }
    }
   }

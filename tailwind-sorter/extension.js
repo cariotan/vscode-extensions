@@ -3,17 +3,17 @@ const vscode = require('vscode');
 
 // Your custom Tailwind class order (modify this array as per your preferences)
 const CLASS_ORDER = [
+    'self', 'justify-self', 'container', 'col', 'row',
+				'flex', 'grid', '[grid-template', 'inline', 'visible',
+    'justify', 'items', 'place', 'content',
+    'gap', 'space',
     'hidden', 'block', 'table',
-    'self', 'container', 'col', 'row',
     'static', 'relative', 'absolute', 'fixed', 'sticky', 'z', 'inset', 'top', 'bottom', 'left', 'right',
     'animate', 'transition', 'origin', 'translate', 'duration', 'opacity', 'scale', 'rotate', 'skew',
     'backdrop',
     'm', 'mx', 'my', 'ml', 'mr', 'mt', 'mb',
     'rounded', 'outline', 'ring', 'border',
     'list',
-    'flex', 'grid', 'inline', 'visible',
-    'justify', 'items', 'place', 'content',
-    'gap', 'space',
     'w', 'h', 'min-w', 'min-h', 'max-w', 'max-h', 'size',
     'appearance',
     'bg', 'from', 'to', 'clip',
@@ -28,7 +28,7 @@ const CLASS_ORDER = [
     'data-',
     'sm:', 'md:', 'ml:', 'lg:', 'lr:', 'xl:', '2xl:',
     'max-sm:', 'max-md:', 'max-ml:', 'max-lg:', 'max-lr:', 'max-xl:', 'max-2xl:',
-    'debug-ring'
+    'debug'
 ];
 
 function sortTailwindClasses(classString) {

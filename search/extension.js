@@ -6,8 +6,9 @@ function getVersionNumber(filePath) {
  const numbers = matches.map(m => parseInt(m.slice(1), 10));
  return Math.max(...numbers);
 }
-
+let count = 0
 function getExtensionPriorityScore(uri, highPriorityExts, lowPriorityExts) {
+	console.log(count++)
  const path = uri.path.toLowerCase();
 
  // Check high priority list

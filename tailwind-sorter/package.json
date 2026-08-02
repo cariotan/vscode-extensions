@@ -2,7 +2,7 @@
     "name": "tailwind-sorter",
     "displayName": "Tailwind Class Sorter",
     "description": "Sorts Tailwind CSS classes based on custom preferences",
-    "version": "0.0.1",
+    "version": "0.0.7",
     "engines": {
         "vscode": "^1.85.0"
     },
