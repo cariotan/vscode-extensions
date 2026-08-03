@@ -3,6 +3,7 @@ const vscode = require('vscode');
 
 // Your custom Tailwind class order (modify this array as per your preferences)
 const CLASS_ORDER = [
+				'gchild', 'fchild',
     'justify-self', 'self', 'container', 'col', 'row', 'order',
 				'flex', 'grid', '[grid-template', 'inline', 'visible',
     'justify', 'items', 'place', 'content',
