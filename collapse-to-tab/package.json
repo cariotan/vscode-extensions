@@ -2,7 +2,7 @@
 	"name": "collapse-to-tab-js",
 	"displayName": "Collapse To Tab (JS)",
 	"description": "When 4 spaces or 4 tabs occur in a row, collapse them into a single tab",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"publisher": "your-name",
 	"engines": {
 		"vscode": "^1.90.0"
@@ -10,7 +10,7 @@
 	"categories": [
 		"Other"
 	],
-	"main": "./src/extension.js",
+	"main": "./extension.js",
 	"activationEvents": [
 		"onStartupFinished",
 		"onCommand:collapse-to-tab.fixDocument"
@@ -19,14 +19,15 @@
 		"commands": [
 			{
 				"command": "collapse-to-tab.fixDocument",
-				"title": "Collapse To Tab: Fix Document"
+				"title": "Collapse To Tab"
 			}
 		],
 		"menus": {
 			"editor/context": [
 				{
 					"command": "collapse-to-tab.fixDocument",
-					"when": "editorTextFocus"
+					"when": "editorTextFocus",
+					"group": "modify"
 				}
 			]
 		}
