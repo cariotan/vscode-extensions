@@ -1,7 +1,7 @@
 {
 	"name": "split-attribute",
 	"displayName": "Split Attribute",
-	"version": "1.2.0",
+	"version": "1.2.1",
 	"publisher": "local-dev",
 	"engines": {
 		"vscode": "^1.60.0"
@@ -21,7 +21,7 @@
 			"editor/context": [
 				{
 					"command": "split-attribute.format",
-					"group": "modification",
+					"group": "modify",
 					"when": "editorTextFocus"
 		 		}
 			]

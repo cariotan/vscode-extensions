@@ -23,7 +23,7 @@
      {
       "when": "resourceLangId == csharp",
       "command": "csharp-method-sorter.sortMethods",
-      "group": "modification"
+      "group": "modify"
      }
     ]
    }

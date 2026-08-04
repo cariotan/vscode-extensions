@@ -1,7 +1,7 @@
 {
 	"name": "signature-stacker",
 	"displayName": "Signature Stacker",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"engines": {
 		"vscode": "^1.60.0"
 	},
@@ -20,7 +20,7 @@
 			"editor/context": [
 				{
 					"command": "extension.formatSignatureVertical",
-					"group": "modification",
+					"group": "modify",
 					"when": "editorTextFocus"
 				}
 			]

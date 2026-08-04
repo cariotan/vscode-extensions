@@ -1,7 +1,7 @@
 {
 	"name": "html-expander",
 	"displayName": "HTML Expander",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"engines": {
 		"vscode": "^1.80.0"
 	},
@@ -18,7 +18,7 @@
 			"editor/context": [
 				{
 					"command": "html-expander.expandTag",
-					"group": "modification",
+					"group": "modify",
 					"when": "editorTextFocus"
 				}
 			]
