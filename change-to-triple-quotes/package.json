@@ -1,0 +1,33 @@
+{
+	"name": "change-to-triple-quotes",
+	"displayName": "Change to Triple Quotes",
+	"description": "Converts double-quoted strings into triple-quoted strings.",
+	"version": "0.0.1",
+	"engines": {
+		"vscode": "^1.80.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"main": "./extension.js",
+	"activationEvents": [
+		"onCommand:change-to-triple-quotes.convertToTripleQuotes"
+	],
+	"contributes": {
+		"commands": [
+			{
+				"command": "change-to-triple-quotes.convertToTripleQuotes",
+				"title": "Change to Triple Quotes"
+			}
+		],
+		"menus": {
+			"editor/context": [
+				{
+					"command": "change-to-triple-quotes.convertToTripleQuotes",
+					"group": "modify",
+					"when": "editorTextFocus"
+				}
+			]
+		}
+	}
+}
