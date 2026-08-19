@@ -1,124 +1,142 @@
-const vscode = require('vscode');
+const vscode = require("vscode");
 
 function activate(context) {
-    let disposable = vscode.commands.registerCommand('html-attribute-stacker.stack', function () {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            return;
-        }
+ let disposable = vscode.commands.registerCommand("html-attribute-stacker.stack", function () {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+   return;
+  }
 
-        const document = editor.document;
-        const selection = editor.selection;
-        const cursorPosition = selection.active;
-        const text = document.getText();
-        const cursorOffset = document.offsetAt(cursorPosition);
+  const document = editor.document;
+  const selection = editor.selection;
+  const cursorPosition = selection.active;
+  const text = document.getText();
+  const cursorOffset = document.offsetAt(cursorPosition);
 
-        let startOffset = -1;
-        let inDoubleQuote = false;
-        let inSingleQuote = false;
+  let startOffset = -1;
+  let inDoubleQuote = false;
+  let inSingleQuote = false;
 
-        // 1. Scan from start of document to cursor to safely identify the opening '<'
-        // This ensures quote tracking is 100% accurate.
-        for (let i = 0; i <= cursorOffset; i++) {
-            const char = text[i];
-            
-            // Track double quotes
-            if (char === '"' && !inSingleQuote) {
-                inDoubleQuote = !inDoubleQuote;
-            } 
-            // Track single quotes
-            else if (char === "'" && !inDoubleQuote) {
-                inSingleQuote = !inSingleQuote;
-            }
+  for (let i = 0; i <= cursorOffset; i++) {
+   const char = text[i];
+   
+   if (char === "\"" && !inSingleQuote) {
+    inDoubleQuote = !inDoubleQuote;
+   } else if (char === "'" && !inDoubleQuote) {
+    inSingleQuote = !inSingleQuote;
+   }
 
-            // Find the opening tag '<' outside of quotes
-            if (!inDoubleQuote && !inSingleQuote && char === '<') {
-                // Ensure it is not a closing tag '</'
-                if (text[i + 1] !== '/') {
-                    startOffset = i;
-                }
-            }
-        }
+   if (!inDoubleQuote && !inSingleQuote && char === "<") {
+    if (text[i + 1] !== "/") {
+     startOffset = i;
+    }
+   }
+  }
 
-        // 2. Scan forward from the startOffset to find the matching closing '>'
-        let endOffset = -1;
-        if (startOffset !== -1) {
-            inDoubleQuote = false;
-            inSingleQuote = false;
-            for (let i = startOffset; i < text.length; i++) {
-                const char = text[i];
+  let endOffset = -1;
+  if (startOffset !== -1) {
+   inDoubleQuote = false;
+   inSingleQuote = false;
+   for (let i = startOffset; i < text.length; i++) {
+    const char = text[i];
 
-                if (char === '"' && !inSingleQuote) {
-                    inDoubleQuote = !inDoubleQuote;
-                } else if (char === "'" && !inDoubleQuote) {
-                    inSingleQuote = !inSingleQuote;
-                }
+    if (char === "\"" && !inSingleQuote) {
+     inDoubleQuote = !inDoubleQuote;
+    } else if (char === "'" && !inDoubleQuote) {
+     inSingleQuote = !inSingleQuote;
+    }
 
-                if (!inDoubleQuote && !inSingleQuote && char === '>') {
-                    endOffset = i;
-                    break;
-                }
-            }
-        }
+    if (!inDoubleQuote && !inSingleQuote && char === ">") {
+     endOffset = i;
+     break;
+    }
+   }
+  }
 
-        // 3. Validation: Verify cursor is actually inside the detected tag range
-        if (startOffset === -1 || endOffset === -1 || cursorOffset < startOffset || cursorOffset > endOffset) {
-            vscode.window.showInformationMessage('Cursor is not inside an HTML tag.');
-            return;
-        }
+  if (startOffset === -1 || endOffset === -1 || cursorOffset < startOffset || cursorOffset > endOffset) {
+   vscode.window.showInformationMessage("Cursor is not inside an HTML tag.");
+   return;
+  }
 
-        const tagContent = text.substring(startOffset, endOffset + 1);
+  const tagContent = text.substring(startOffset, endOffset + 1);
 
-        // 4. Extract the Tag Name
-        const tagNameMatch = tagContent.match(/^<([^\s>]+)/);
-        if (!tagNameMatch) return;
-        const tagName = tagNameMatch[1];
+  const tagNameMatch = tagContent.match(/^<([^\s>]+)/);
+  if (!tagNameMatch) return;
+  const tagName = tagNameMatch[1];
 
-        // Check if it's a self-closing tag (ends with '/>' or has '/' before '>')
-        const isSelfClosing = tagContent.endsWith('/>') || tagContent.endsWith('/ >') || tagContent.trim().endsWith('/>');
+  const isSelfClosing = tagContent.endsWith("/>") || tagContent.endsWith("/ >") || tagContent.trim().endsWith("/>");
 
-        // 5. Parse individual attributes (handles quotes and multiline attributes)
-        const attrRegex = /([^\s="'>]+(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?)/g;
-        // Trim tag name and trailing brackets to isolate attributes string
-        const endClip = isSelfClosing ? 2 : 1;
-        const attributesString = tagContent.substring(tagName.length + 1, tagContent.length - endClip);
-        const attributes = attributesString.match(attrRegex);
+  const attrRegex = /([^\s="'>]+(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?)/g;
+  const endClip = isSelfClosing ? 2 : 1;
+  const attributesString = tagContent.substring(tagName.length + 1, tagContent.length - endClip);
+  const attributes = attributesString.match(attrRegex);
 
-        if (!attributes || attributes.length === 0) {
-            vscode.window.showInformationMessage('No attributes found to stack.');
-            return;
-        }
+  if (!attributes || attributes.length === 0) {
+   vscode.window.showInformationMessage("No attributes found to stack.");
+   return;
+  }
 
-        // 6. Determine base indentation of the line where the tag starts
-        const startPosition = document.positionAt(startOffset);
-        const startLineText = document.lineAt(startPosition.line).text;
-        const baseIndentMatch = startLineText.match(/^(\s*)/);
-        const baseIndent = baseIndentMatch ? baseIndentMatch[1] : '';
+  let hasOnlyText = false;
+  let textContent = "";
 
-        // 7. Reconstruct the HTML tag with stacked attributes
-        let newText = `<${tagName}\n`;
-        for (const attr of attributes) {
-            // Normalize internal white spaces inside the attribute
-            const cleanedAttr = attr.replace(/\s+/g, ' ').trim();
-            newText += `${baseIndent}\t${cleanedAttr}\n`;
-        }
-        newText += `${baseIndent}${isSelfClosing ? '/>' : '>'}`;
+  if (!isSelfClosing) {
+   const restOfText = text.substring(endOffset + 1);
+   const closingTagRegex = new RegExp("^([\\s\\S]*?)</" + tagName + "\\s*>", "i");
+   const closingMatch = restOfText.match(closingTagRegex);
 
-        // 8. Replace the old range with the newly formatted string
-        const endPosition = document.positionAt(endOffset + 1);
-        const rangeToReplace = new vscode.Range(startPosition, endPosition);
+   if (closingMatch && !closingMatch[1].includes("<")) {
+    const trimmedText = closingMatch[1].trim();
+    if (trimmedText.length > 0) {
+     hasOnlyText = true;
+     textContent = trimmedText;
+     endOffset = endOffset + closingMatch[0].length;
+    }
+   }
+  }
 
-        editor.edit(editBuilder => {
-            editBuilder.replace(rangeToReplace, newText);
-        });
-    });
+  const startPosition = document.positionAt(startOffset);
+  const startLineText = document.lineAt(startPosition.line).text;
+  const baseIndentMatch = startLineText.match(/^(\s*)/);
+  const baseIndent = baseIndentMatch ? baseIndentMatch[1] : "";
 
-    context.subscriptions.push(disposable);
+  const valuelessAttributes = attributes.filter(attr => !attr.includes("="));
+  const valuedAttributes = attributes.filter(attr => attr.includes("="));
+
+  let newText = "<" + tagName;
+
+  if (valuelessAttributes.length > 0) {
+   newText += " " + valuelessAttributes.map(a => a.replace(/\s+/g, " ").trim()).join(" ");
+  }
+
+  if (valuedAttributes.length > 0) {
+   newText += "\n";
+   for (const attr of valuedAttributes) {
+    const cleanedAttr = attr.replace(/\s+/g, " ").trim();
+    newText += baseIndent + " " + cleanedAttr + "\n";
+   }
+   newText += baseIndent + (isSelfClosing ? "/>" : ">");
+  } else {
+   newText += isSelfClosing ? " />" : ">";
+  }
+
+  if (hasOnlyText) {
+   newText += "\n" + baseIndent + " " + textContent + "\n" + baseIndent + "</" + tagName + ">";
+  }
+
+  const endPosition = document.positionAt(endOffset + 1);
+  const rangeToReplace = new vscode.Range(startPosition, endPosition);
+
+  editor.edit(editBuilder => {
+   editBuilder.replace(rangeToReplace, newText);
+  });
+ });
+
+ context.subscriptions.push(disposable);
 }
 
 function deactivate() {}
 
 module.exports = {
-    activate,
-    deactivate
-}
+ activate,
+ deactivate
+};
