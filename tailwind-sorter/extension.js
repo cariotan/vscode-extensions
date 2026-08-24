@@ -7,6 +7,7 @@ const CLASS_ORDER = [
     'justify-self', 'self', 'container', 'col', 'row', 'order',
 				'flex', 'grid', '[grid-template', 'inline', 'visible',
     'justify', 'items', 'place', 'content',
+				'basis', 'grow', 'shrink',
     'gap', 'space',
     'hidden', 'block', 'table',
     'static', 'relative', 'absolute', 'fixed', 'sticky', 'z', 'inset', 'top', 'bottom', 'left', 'right',
