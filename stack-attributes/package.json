@@ -2,7 +2,7 @@
   "name": "html-attribute-stacker",
   "displayName": "HTML Attribute Stacker",
   "description": "Vertically stacks HTML attributes with proper indentation",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "engines": {
     "vscode": "^1.75.0"
   },

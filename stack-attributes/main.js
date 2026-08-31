@@ -1,142 +1,95 @@
-const vscode = require("vscode");
+const vscode = require('vscode');
 
 function activate(context) {
- let disposable = vscode.commands.registerCommand("html-attribute-stacker.stack", function () {
-  const editor = vscode.window.activeTextEditor;
-  if (!editor) {
-   return;
-  }
+	let disposable = vscode.commands.registerCommand('html-attribute-stacker.stack', function () {
+		const editor = vscode.window.activeTextEditor;
+		if (!editor) return;
 
-  const document = editor.document;
-  const selection = editor.selection;
-  const cursorPosition = selection.active;
-  const text = document.getText();
-  const cursorOffset = document.offsetAt(cursorPosition);
+		const document = editor.document;
+		const position = editor.selection.active;
+		const lineText = document.lineAt(position.line).text;
 
-  let startOffset = -1;
-  let inDoubleQuote = false;
-  let inSingleQuote = false;
+		const tagRegex = /<([a-zA-Z0-9\-]+)([^>]*)>(.*?)(<\/\1>)?/g;
+		let match;
+		let targetMatch = null;
 
-  for (let i = 0; i <= cursorOffset; i++) {
-   const char = text[i];
-   
-   if (char === "\"" && !inSingleQuote) {
-    inDoubleQuote = !inDoubleQuote;
-   } else if (char === "'" && !inDoubleQuote) {
-    inSingleQuote = !inSingleQuote;
-   }
+		while ((match = tagRegex.exec(lineText)) !== null) {
+			const start = match.index;
+			const end = start + match[0].length;
+			if (position.character >= start && position.character <= end) {
+				targetMatch = match;
+				break;
+			}
+		}
 
-   if (!inDoubleQuote && !inSingleQuote && char === "<") {
-    if (text[i + 1] !== "/") {
-     startOffset = i;
-    }
-   }
-  }
+		if (!targetMatch) {
+			vscode.window.showInformationMessage('No HTML tag found at cursor on this line.');
+			return;
+		}
 
-  let endOffset = -1;
-  if (startOffset !== -1) {
-   inDoubleQuote = false;
-   inSingleQuote = false;
-   for (let i = startOffset; i < text.length; i++) {
-    const char = text[i];
+		const fullMatch = targetMatch[0];
+		const tagName = targetMatch[1];
+		let attributesString = targetMatch[2];
+		const innerContent = targetMatch[3] || "";
+		const closingTag = targetMatch[4] || "";
 
-    if (char === "\"" && !inSingleQuote) {
-     inDoubleQuote = !inDoubleQuote;
-    } else if (char === "'" && !inDoubleQuote) {
-     inSingleQuote = !inSingleQuote;
-    }
+		const isSelfClosing = attributesString.trim().endsWith('/');
+		if (isSelfClosing) {
+			attributesString = attributesString.replace(/\/$/, '');
+		}
 
-    if (!inDoubleQuote && !inSingleQuote && char === ">") {
-     endOffset = i;
-     break;
-    }
-   }
-  }
+		const baseIndent = lineText.match(/^\s*/)[0];
+		const attrIndent = baseIndent + '\t';
 
-  if (startOffset === -1 || endOffset === -1 || cursorOffset < startOffset || cursorOffset > endOffset) {
-   vscode.window.showInformationMessage("Cursor is not inside an HTML tag.");
-   return;
-  }
+		const attrRegex = /([^\s=]+)(?:=(["'])(.*?)\2)?/g;
+		let attrMatch;
+		const valuelessAttrs = [];
+		const valueAttrs = [];
 
-  const tagContent = text.substring(startOffset, endOffset + 1);
+		while ((attrMatch = attrRegex.exec(attributesString)) !== null) {
+			const attrName = attrMatch[1];
+			const hasValue = attrMatch[2] !== undefined;
+			if (hasValue) {
+				valueAttrs.push(attrMatch[0]);
+			} else {
+				valuelessAttrs.push(attrName);
+			}
+		}
 
-  const tagNameMatch = tagContent.match(/^<([^\s>]+)/);
-  if (!tagNameMatch) return;
-  const tagName = tagNameMatch[1];
+		let formatted = `<${tagName}`;
+		if (valuelessAttrs.length > 0) {
+			formatted += ` ${valuelessAttrs.join(' ')}`;
+		}
 
-  const isSelfClosing = tagContent.endsWith("/>") || tagContent.endsWith("/ >") || tagContent.trim().endsWith("/>");
+		if (valueAttrs.length > 0) {
+			valueAttrs.forEach(attr => {
+				formatted += `\n${attrIndent}${attr}`;
+			});
+			// Drops the closing > down to a new line matching the tag's base indentation
+			formatted += `\n${baseIndent}${isSelfClosing ? '/>' : '>'}`;
+		} else {
+			formatted += isSelfClosing ? ' />' : '>';
+		}
 
-  const attrRegex = /([^\s="'>]+(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?)/g;
-  const endClip = isSelfClosing ? 2 : 1;
-  const attributesString = tagContent.substring(tagName.length + 1, tagContent.length - endClip);
-  const attributes = attributesString.match(attrRegex);
+		if (innerContent || closingTag) {
+			formatted += `\n${attrIndent}${innerContent}${closingTag}`;
+		}
 
-  if (!attributes || attributes.length === 0) {
-   vscode.window.showInformationMessage("No attributes found to stack.");
-   return;
-  }
+		const startPos = new vscode.Position(position.line, targetMatch.index);
+		const endPos = new vscode.Position(position.line, targetMatch.index + fullMatch.length);
+		const range = new vscode.Range(startPos, endPos);
 
-  let hasOnlyText = false;
-  let textContent = "";
+		editor.edit(editBuilder => {
+			editBuilder.replace(range, formatted);
+		});
+	});
 
-  if (!isSelfClosing) {
-   const restOfText = text.substring(endOffset + 1);
-   const closingTagRegex = new RegExp("^([\\s\\S]*?)</" + tagName + "\\s*>", "i");
-   const closingMatch = restOfText.match(closingTagRegex);
-
-   if (closingMatch && !closingMatch[1].includes("<")) {
-    const trimmedText = closingMatch[1].trim();
-    if (trimmedText.length > 0) {
-     hasOnlyText = true;
-     textContent = trimmedText;
-     endOffset = endOffset + closingMatch[0].length;
-    }
-   }
-  }
-
-  const startPosition = document.positionAt(startOffset);
-  const startLineText = document.lineAt(startPosition.line).text;
-  const baseIndentMatch = startLineText.match(/^(\s*)/);
-  const baseIndent = baseIndentMatch ? baseIndentMatch[1] : "";
-
-  const valuelessAttributes = attributes.filter(attr => !attr.includes("="));
-  const valuedAttributes = attributes.filter(attr => attr.includes("="));
-
-  let newText = "<" + tagName;
-
-  if (valuelessAttributes.length > 0) {
-   newText += " " + valuelessAttributes.map(a => a.replace(/\s+/g, " ").trim()).join(" ");
-  }
-
-  if (valuedAttributes.length > 0) {
-   newText += "\n";
-   for (const attr of valuedAttributes) {
-    const cleanedAttr = attr.replace(/\s+/g, " ").trim();
-    newText += baseIndent + " " + cleanedAttr + "\n";
-   }
-   newText += baseIndent + (isSelfClosing ? "/>" : ">");
-  } else {
-   newText += isSelfClosing ? " />" : ">";
-  }
-
-  if (hasOnlyText) {
-   newText += "\n" + baseIndent + " " + textContent + "\n" + baseIndent + "</" + tagName + ">";
-  }
-
-  const endPosition = document.positionAt(endOffset + 1);
-  const rangeToReplace = new vscode.Range(startPosition, endPosition);
-
-  editor.edit(editBuilder => {
-   editBuilder.replace(rangeToReplace, newText);
-  });
- });
-
- context.subscriptions.push(disposable);
+	context.subscriptions.push(disposable);
 }
 
 function deactivate() {}
 
 module.exports = {
- activate,
- deactivate
+	activate,
+	deactivate
 };
