@@ -1,40 +1,47 @@
 const vscode = require("vscode");
 
-function getVersionNumber(filePath) {
+function getVersionNumber(filePath)
+{
 	const matches = filePath.match(/v(\d+)/gi);
-	if (!matches) return 0;
+	if(!matches) return 0;
 	const numbers = matches.map(m => parseInt(m.slice(1), 10));
 	return Math.max(...numbers);
 }
 
 let count = 0;
-function getExtensionPriorityScore(uri, highPriorityExts, lowPriorityExts) {
+function getExtensionPriorityScore(uri, highPriorityExts, lowPriorityExts)
+{
 	console.log(count++);
 	const path = uri.path.toLowerCase();
 
 	// Check high priority list
-	const isHighPriority = highPriorityExts.some(ext => {
+	const isHighPriority = highPriorityExts.some(ext =>
+	{
 		const normalized = ext.startsWith(".") ? ext.toLowerCase() : `.${ext.toLowerCase()}`;
 		return path.endsWith(normalized);
 	});
-	if (isHighPriority) return 1;
+	if(isHighPriority) return 1;
 
 	// Check low priority list
-	const isLowPriority = lowPriorityExts.some(ext => {
+	const isLowPriority = lowPriorityExts.some(ext =>
+	{
 		const normalized = ext.startsWith(".") ? ext.toLowerCase() : `.${ext.toLowerCase()}`;
 		return path.endsWith(normalized);
 	});
-	if (isLowPriority) return -1;
+	if(isLowPriority) return -1;
 
 	// Normal priority
 	return 0;
 }
 
-function activate(context) {
+function activate(context)
+{
 	let cachedFiles = [];
 
-	function refreshFiles() {
-		vscode.workspace.findFiles("**/*", "{**/node_modules/**,**/.git/**}").then(files => {
+	function refreshFiles()
+	{
+		vscode.workspace.findFiles("**/*", "{**/node_modules/**,**/.git/**}").then(files =>
+		{
 			console.log(`[CustomSearch] Cached ${files.length} workspace files.`);
 			cachedFiles = files;
 		});
@@ -43,18 +50,22 @@ function activate(context) {
 	refreshFiles();
 
 	const watcher = vscode.workspace.createFileSystemWatcher("**/*");
-	watcher.onDidCreate(uri => {
-		if (!cachedFiles.some(f => f.toString() === uri.toString())) {
+	watcher.onDidCreate(uri =>
+	{
+		if(!cachedFiles.some(f => f.toString() === uri.toString()))
+		{
 			cachedFiles.push(uri);
 		}
 	});
-	watcher.onDidDelete(uri => {
+	watcher.onDidDelete(uri =>
+	{
 		cachedFiles = cachedFiles.filter(f => f.toString() !== uri.toString());
 	});
 
 	context.subscriptions.push(watcher);
 
-	let disposable = vscode.commands.registerCommand("customSearch.start", () => {
+	let disposable = vscode.commands.registerCommand("customSearch.start", () =>
+	{
 		const quickPick = vscode.window.createQuickPick();
 		quickPick.placeholder = "Type to search files and symbols, or > for commands...";
 
@@ -63,23 +74,32 @@ function activate(context) {
 		const highPriorityExts = config.get("highPriorityExtensions", []);
 		const lowPriorityExts = config.get("lowPriorityExtensions", []);
 
-		quickPick.onDidChangeValue(async (value) => {
+		quickPick.onDidChangeValue(async (value) =>
+		{
 			console.log(`[CustomSearch] Input changed: "${value}"`);
 
-			if (value.startsWith(">")) {
+			if(value.startsWith(">"))
+			{
 				quickPick.hide();
 				vscode.commands.executeCommand("workbench.action.showCommands");
 				return;
 			}
 
 			const terms = value.trim().toLowerCase().split(/\s+/).filter(Boolean);
-			const pattern = terms.map(term => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*");
+
+			// 1. Remove all spaces so typing "home csh" or "home.csh" acts the same
+			const sequence = value.trim().replace(/\s+/g, "");
+
+			// 2. Split into individual characters, escape specials, and put .* between every letter
+			const pattern = sequence.split("").map(char => char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*");
+
 			const regex = new RegExp(pattern, "i");
 
 			// 1. Process and display files immediately
 			const filteredFiles = cachedFiles
-				.filter(file => {
-					if (terms.length === 0) return true;
+				.filter(file =>
+				{
+					if(terms.length === 0) return true;
 					const relativePath = vscode.workspace.asRelativePath(file);
 					const parts = relativePath.split("/");
 					const fileName = parts.pop() || relativePath;
@@ -87,11 +107,13 @@ function activate(context) {
 					const searchableTarget = `${fileName} ${dirPath} ${fileName}`;
 					return regex.test(searchableTarget);
 				})
-				.sort((a, b) => {
+				.sort((a, b) =>
+				{
 					const priorityA = getExtensionPriorityScore(a, highPriorityExts, lowPriorityExts);
 					const priorityB = getExtensionPriorityScore(b, highPriorityExts, lowPriorityExts);
 
-					if (priorityA !== priorityB) {
+					if(priorityA !== priorityB)
+					{
 						return priorityB - priorityA;
 					}
 
@@ -101,7 +123,8 @@ function activate(context) {
 				})
 				.slice(0, 100);
 
-			const fileItems = filteredFiles.map(file => {
+			const fileItems = filteredFiles.map(file =>
+			{
 				const relativePath = vscode.workspace.asRelativePath(file);
 				const fileName = file.path.split("/").pop() || relativePath;
 				return {
@@ -115,23 +138,28 @@ function activate(context) {
 			quickPick.items = fileItems;
 
 			// 2. Fetch and append symbols if there's a search term
-			if (terms.length > 0) {
+			if(terms.length > 0)
+			{
 				quickPick.busy = true;
-				try {
+				try
+				{
 					const providerQuery = terms[0] || "";
 					const symbols = await vscode.commands.executeCommand(
 						"vscode.executeWorkspaceSymbolProvider",
 						providerQuery
 					);
 
-					if (symbols && symbols.length > 0) {
+					if(symbols && symbols.length > 0)
+					{
 						const filteredSymbols = symbols
-							.filter(sym => {
+							.filter(sym =>
+							{
 								const relativePath = vscode.workspace.asRelativePath(sym.location.uri);
 								const searchableTarget = `${sym.name} ${sym.containerName || ""} ${relativePath}`;
 								return regex.test(searchableTarget);
 							})
-							.sort((a, b) => {
+							.sort((a, b) =>
+							{
 								const relA = vscode.workspace.asRelativePath(a.location.uri);
 								const relB = vscode.workspace.asRelativePath(b.location.uri);
 								return getVersionNumber(relB) - getVersionNumber(relA);
@@ -147,27 +175,35 @@ function activate(context) {
 						}));
 
 						// Prevent older requests from overwriting newer keystrokes
-						if (quickPick.value === value) {
+						if(quickPick.value === value)
+						{
 							quickPick.items = [...fileItems, ...symbolItems];
 						}
 					}
-				} catch (err) {
+				} catch(err)
+				{
 					console.error("[CustomSearch] Symbol search error:", err);
-				} finally {
-					if (quickPick.value === value) {
+				} finally
+				{
+					if(quickPick.value === value)
+					{
 						quickPick.busy = false;
 					}
 				}
 			}
 		});
 
-		quickPick.onDidAccept(async () => {
+		quickPick.onDidAccept(async () =>
+		{
 			const selection = quickPick.selectedItems[0];
-			if (selection) {
-				if (selection.fileUri) {
+			if(selection)
+			{
+				if(selection.fileUri)
+				{
 					const doc = await vscode.workspace.openTextDocument(selection.fileUri);
 					await vscode.window.showTextDocument(doc);
-				} else if (selection.symbolData) {
+				} else if(selection.symbolData)
+				{
 					const doc = await vscode.workspace.openTextDocument(selection.symbolData.location.uri);
 					const editor = await vscode.window.showTextDocument(doc);
 					const range = selection.symbolData.location.range;
@@ -186,7 +222,7 @@ function activate(context) {
 	context.subscriptions.push(disposable);
 }
 
-function deactivate() {}
+function deactivate() { }
 
 module.exports = {
 	activate,
