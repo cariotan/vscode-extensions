@@ -8,42 +8,36 @@ function getVersionNumber(filePath)
 	return Math.max(...numbers);
 }
 
-let count = 0;
-function getExtensionPriorityScore(uri, highPriorityExts, lowPriorityExts)
+function processUri(uri)
 {
-	console.log(count++);
-	const path = uri.path.toLowerCase();
+	const relativePath = vscode.workspace.asRelativePath(uri);
+	const parts = relativePath.split("/");
+	const fileName = parts.pop() || relativePath;
+	const dirPath = parts.join("/");
+	
+	const pathLower = uri.path.toLowerCase();
+	const lastDot = pathLower.lastIndexOf(".");
+	const ext = lastDot !== -1 ? pathLower.substring(lastDot) : "";
 
-	// Check high priority list
-	const isHighPriority = highPriorityExts.some(ext =>
-	{
-		const normalized = ext.startsWith(".") ? ext.toLowerCase() : `.${ext.toLowerCase()}`;
-		return path.endsWith(normalized);
-	});
-	if(isHighPriority) return 1;
-
-	// Check low priority list
-	const isLowPriority = lowPriorityExts.some(ext =>
-	{
-		const normalized = ext.startsWith(".") ? ext.toLowerCase() : `.${ext.toLowerCase()}`;
-		return path.endsWith(normalized);
-	});
-	if(isLowPriority) return -1;
-
-	// Normal priority
-	return 0;
+	return {
+		uri,
+		relativePath,
+		fileName,
+		searchableTarget: `${fileName} ${dirPath} ${fileName}`,
+		version: getVersionNumber(relativePath),
+		ext
+	};
 }
 
 function activate(context)
 {
-	let cachedFiles = [];
+	let cachedFilesData = [];
 
 	function refreshFiles()
 	{
 		vscode.workspace.findFiles("**/*", "{**/node_modules/**,**/.git/**}").then(files =>
 		{
-			console.log(`[CustomSearch] Cached ${files.length} workspace files.`);
-			cachedFiles = files;
+			cachedFilesData = files.map(processUri);
 		});
 	}
 
@@ -52,14 +46,14 @@ function activate(context)
 	const watcher = vscode.workspace.createFileSystemWatcher("**/*");
 	watcher.onDidCreate(uri =>
 	{
-		if(!cachedFiles.some(f => f.toString() === uri.toString()))
+		if(!cachedFilesData.some(f => f.uri.toString() === uri.toString()))
 		{
-			cachedFiles.push(uri);
+			cachedFilesData.push(processUri(uri));
 		}
 	});
 	watcher.onDidDelete(uri =>
 	{
-		cachedFiles = cachedFiles.filter(f => f.toString() !== uri.toString());
+		cachedFilesData = cachedFilesData.filter(f => f.uri.toString() !== uri.toString());
 	});
 
 	context.subscriptions.push(watcher);
@@ -69,15 +63,15 @@ function activate(context)
 		const quickPick = vscode.window.createQuickPick();
 		quickPick.placeholder = "Type to search files and symbols, or > for commands...";
 
-		// Read current setting configuration
 		const config = vscode.workspace.getConfiguration("customSearch");
-		const highPriorityExts = config.get("highPriorityExtensions", []);
-		const lowPriorityExts = config.get("lowPriorityExtensions", []);
+		const rawHigh = config.get("highPriorityExtensions", []);
+		const rawLow = config.get("lowPriorityExtensions", []);
+		
+		const highPriorityExts = new Set(rawHigh.map(e => e.startsWith(".") ? e.toLowerCase() : `.${e.toLowerCase()}`));
+		const lowPriorityExts = new Set(rawLow.map(e => e.startsWith(".") ? e.toLowerCase() : `.${e.toLowerCase()}`));
 
 		quickPick.onDidChangeValue(async (value) =>
 		{
-			console.log(`[CustomSearch] Input changed: "${value}"`);
-
 			if(value.startsWith(">"))
 			{
 				quickPick.hide();
@@ -86,58 +80,54 @@ function activate(context)
 			}
 
 			const terms = value.trim().toLowerCase().split(/\s+/).filter(Boolean);
-
-			// 1. Remove all spaces so typing "home csh" or "home.csh" acts the same
+			const rawQueryWithoutSpaces = value.trim().toLowerCase().replace(/\s+/g, "");
 			const sequence = value.trim().replace(/\s+/g, "");
-
-			// 2. Split into individual characters, escape specials, and put .* between every letter
-			const pattern = sequence.split("").map(char => char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*");
-
+			
+			// Use .*? for non-greedy matching to calculate match spread accurately
+			const pattern = sequence.split("").map(char => char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*?");
 			const regex = new RegExp(pattern, "i");
 
-			// 1. Process and display files immediately
-			const filteredFiles = cachedFiles
-				.filter(file =>
+			// 1. Process files with exact match and spread scoring
+			const filteredFiles = cachedFilesData
+				.map(file =>
 				{
-					if(terms.length === 0) return true;
-					const relativePath = vscode.workspace.asRelativePath(file);
-					const parts = relativePath.split("/");
-					const fileName = parts.pop() || relativePath;
-					const dirPath = parts.join("/");
-					const searchableTarget = `${fileName} ${dirPath} ${fileName}`;
-					return regex.test(searchableTarget);
+					if(terms.length === 0) return { ...file, matched: true, exactScore: 0, spread: 0 };
+					
+					const match = regex.exec(file.searchableTarget);
+					if(!match) return { ...file, matched: false };
+					
+					let exactScore = 0;
+					const lowerName = file.fileName.toLowerCase();
+					
+					if(lowerName.includes(rawQueryWithoutSpaces)) exactScore = 2; // Direct filename chunk
+					else if(file.relativePath.toLowerCase().includes(rawQueryWithoutSpaces)) exactScore = 1; // Path chunk
+					
+					return { ...file, matched: true, exactScore, spread: match[0].length };
 				})
+				.filter(f => f.matched)
 				.sort((a, b) =>
 				{
-					const priorityA = getExtensionPriorityScore(a, highPriorityExts, lowPriorityExts);
-					const priorityB = getExtensionPriorityScore(b, highPriorityExts, lowPriorityExts);
+					if(a.exactScore !== b.exactScore) return b.exactScore - a.exactScore;
+					if(a.spread !== b.spread) return a.spread - b.spread;
+					
+					const priorityA = highPriorityExts.has(a.ext) ? 1 : (lowPriorityExts.has(a.ext) ? -1 : 0);
+					const priorityB = highPriorityExts.has(b.ext) ? 1 : (lowPriorityExts.has(b.ext) ? -1 : 0);
 
-					if(priorityA !== priorityB)
-					{
-						return priorityB - priorityA;
-					}
-
-					const relA = vscode.workspace.asRelativePath(a);
-					const relB = vscode.workspace.asRelativePath(b);
-					return getVersionNumber(relB) - getVersionNumber(relA);
+					if(priorityA !== priorityB) return priorityB - priorityA;
+					return b.version - a.version;
 				})
 				.slice(0, 100);
 
-			const fileItems = filteredFiles.map(file =>
-			{
-				const relativePath = vscode.workspace.asRelativePath(file);
-				const fileName = file.path.split("/").pop() || relativePath;
-				return {
-					label: `$(file) ${fileName}`,
-					description: relativePath,
-					alwaysShow: true,
-					fileUri: file
-				};
-			});
+			const fileItems = filteredFiles.map(file => ({
+				label: `$(file) ${file.fileName}`,
+				description: file.relativePath,
+				alwaysShow: true,
+				fileUri: file.uri
+			}));
 
 			quickPick.items = fileItems;
 
-			// 2. Fetch and append symbols if there's a search term
+			// 2. Fetch and apply the same scoring logic to symbols
 			if(terms.length > 0)
 			{
 				quickPick.busy = true;
@@ -152,29 +142,45 @@ function activate(context)
 					if(symbols && symbols.length > 0)
 					{
 						const filteredSymbols = symbols
-							.filter(sym =>
+							.map(sym =>
 							{
 								const relativePath = vscode.workspace.asRelativePath(sym.location.uri);
 								const searchableTarget = `${sym.name} ${sym.containerName || ""} ${relativePath}`;
-								return regex.test(searchableTarget);
+								const match = regex.exec(searchableTarget);
+								if(!match) return { sym, matched: false };
+
+								let exactScore = 0;
+								const lowerName = sym.name.toLowerCase();
+								
+								if(lowerName.includes(rawQueryWithoutSpaces)) exactScore = 2;
+								else if(searchableTarget.toLowerCase().includes(rawQueryWithoutSpaces)) exactScore = 1;
+
+								return { 
+									sym, 
+									relativePath,
+									exactScore,
+									spread: match[0].length,
+									matched: true
+								};
 							})
+							.filter(item => item.matched)
 							.sort((a, b) =>
 							{
-								const relA = vscode.workspace.asRelativePath(a.location.uri);
-								const relB = vscode.workspace.asRelativePath(b.location.uri);
-								return getVersionNumber(relB) - getVersionNumber(relA);
+								if(a.exactScore !== b.exactScore) return b.exactScore - a.exactScore;
+								if(a.spread !== b.spread) return a.spread - b.spread;
+								
+								return getVersionNumber(b.relativePath) - getVersionNumber(a.relativePath);
 							})
 							.slice(0, 100);
 
-						const symbolItems = filteredSymbols.map(sym => ({
-							label: `$(symbol-misc) ${sym.name}`,
-							description: vscode.workspace.asRelativePath(sym.location.uri),
-							detail: sym.containerName,
+						const symbolItems = filteredSymbols.map(item => ({
+							label: `$(symbol-misc) ${item.sym.name}`,
+							description: item.relativePath,
+							detail: item.sym.containerName,
 							alwaysShow: true,
-							symbolData: sym
+							symbolData: item.sym
 						}));
 
-						// Prevent older requests from overwriting newer keystrokes
 						if(quickPick.value === value)
 						{
 							quickPick.items = [...fileItems, ...symbolItems];
