@@ -35,7 +35,13 @@ function activate(context)
 
 	function refreshFiles()
 	{
-		vscode.workspace.findFiles("**/*", "{**/node_modules/**,**/.git/**}").then(files =>
+		const config = vscode.workspace.getConfiguration("customSearch");
+		const excludePatterns = config.get("excludePatterns", []);
+		
+		// Wrap the array in {} to create a valid VS Code glob pattern
+		const excludeGlob = excludePatterns.length > 0 ? `{${excludePatterns.join(',')}}` : null;
+
+		vscode.workspace.findFiles("**/*", excludeGlob).then(files =>
 		{
 			cachedFilesData = files.map(processUri);
 		});
@@ -46,6 +52,13 @@ function activate(context)
 	const watcher = vscode.workspace.createFileSystemWatcher("**/*");
 	watcher.onDidCreate(uri =>
 	{
+		const relativePath = vscode.workspace.asRelativePath(uri);
+		
+		// Quick check to stop standard build output from caching
+		if(relativePath.includes("/bin/") || relativePath.includes("/obj/") || relativePath.includes("node_modules")) {
+			return;
+		}
+
 		if(!cachedFilesData.some(f => f.uri.toString() === uri.toString()))
 		{
 			cachedFilesData.push(processUri(uri));
