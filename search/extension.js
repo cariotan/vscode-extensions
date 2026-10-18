@@ -1,4 +1,23 @@
 const vscode = require("vscode");
+const cp = require("child_process");
+const path = require("path");
+const fs = require("fs");
+
+function getRipgrepPath()
+{
+	const exe = process.platform === "win32" ? "rg.exe" : "rg";
+	const possiblePaths = [
+		path.join(vscode.env.appRoot, "node_modules", "@vscode", "ripgrep", "bin", exe),
+		path.join(vscode.env.appRoot, "node_modules.asar.unpacked", "@vscode", "ripgrep", "bin", exe),
+		path.join(vscode.env.appRoot, "node_modules", "vscode-ripgrep", "bin", exe),
+		path.join(vscode.env.appRoot, "node_modules.asar.unpacked", "vscode-ripgrep", "bin", exe)
+	];
+	for(const p of possiblePaths)
+	{
+		if(fs.existsSync(p)) return p;
+	}
+	return "rg";
+}
 
 function getVersionNumber(filePath)
 {
@@ -32,6 +51,7 @@ function processUri(uri)
 function activate(context)
 {
 	let cachedFilesData = [];
+	const rgPath = getRipgrepPath();
 
 	function refreshFiles()
 	{
@@ -74,23 +94,130 @@ function activate(context)
 	let disposable = vscode.commands.registerCommand("customSearch.start", () =>
 	{
 		const quickPick = vscode.window.createQuickPick();
-		quickPick.placeholder = "Type to search files and symbols, or > for commands...";
+		quickPick.placeholder = "Type to search files and symbols, ? for text, or > for commands...";
+		
+		// Prevent VS Code's internal sorting from interfering with our custom lists
+		quickPick.sortByLabel = false;
 
 		const config = vscode.workspace.getConfiguration("customSearch");
 		const rawHigh = config.get("highPriorityExtensions", []);
 		const rawLow = config.get("lowPriorityExtensions", []);
+		const excludePatterns = config.get("excludePatterns", []);
 		
 		const highPriorityExts = new Set(rawHigh.map(e => e.startsWith(".") ? e.toLowerCase() : `.${e.toLowerCase()}`));
 		const lowPriorityExts = new Set(rawLow.map(e => e.startsWith(".") ? e.toLowerCase() : `.${e.toLowerCase()}`));
 
+		let rgTimeout = null;
+		let currentRgProcess = null;
+
 		quickPick.onDidChangeValue(async (value) =>
 		{
+			if(rgTimeout) clearTimeout(rgTimeout);
+			if(currentRgProcess)
+			{
+				currentRgProcess.kill();
+				currentRgProcess = null;
+			}
+
 			if(value.startsWith(">"))
 			{
 				quickPick.hide();
 				vscode.commands.executeCommand("workbench.action.showCommands");
 				return;
 			}
+
+			// --- ? Text Search Mode ---
+			if(value.startsWith("?"))
+			{
+				const searchQuery = value.slice(1).trim();
+				const folders = vscode.workspace.workspaceFolders;
+
+				if(!folders || searchQuery.length === 0)
+				{
+					quickPick.items = [];
+					quickPick.busy = false;
+					return;
+				}
+
+				const rootPath = folders[0].uri.fsPath;
+				quickPick.busy = true;
+
+				rgTimeout = setTimeout(() =>
+				{
+					// --fixed-strings (-F) prevents regex crashes on special chars like ( ) [ ] ?
+					const args = [
+						"--vimgrep",
+						"--fixed-strings",
+						"--smart-case",
+						"--max-count", "50",
+						"--max-columns", "300"
+					];
+
+					for(const pattern of excludePatterns)
+					{
+						args.push("-g", `!${pattern}`);
+					}
+					args.push("--", searchQuery, ".");
+
+					const proc = cp.spawn(rgPath, args, { cwd: rootPath });
+					currentRgProcess = proc;
+
+					let stdout = "";
+					let killedEarly = false;
+
+					proc.stdout.on("data", data =>
+					{
+						stdout += data.toString();
+						if(!killedEarly && stdout.split("\n").length > 100)
+						{
+							killedEarly = true;
+							proc.kill();
+						}
+					});
+
+					proc.on("close", () =>
+					{
+						// Ignore if this process was superseded by a newer keystroke
+						if(currentRgProcess !== proc) return;
+						quickPick.busy = false;
+
+						const lines = stdout.split(/\r?\n/).filter(Boolean).slice(0, 100);
+						const textItems = lines.map(line =>
+						{
+							const match = line.match(/^(.*?):(\d+):(\d+):(.*)$/);
+							if(!match) return null;
+
+							const [, file, lineStr, colStr, text] = match;
+							const lineNum = parseInt(lineStr, 10) - 1;
+							const colNum = parseInt(colStr, 10) - 1;
+							const normalizedFile = file.replace(/^\.[\\/]/, "").replace(/\\/g, "/");
+
+							return {
+								label: `$(search) ${text.trim()}`,
+								description: `${normalizedFile}:${lineStr}`,
+								alwaysShow: true,
+								textMatchData: {
+									uri: vscode.Uri.file(path.join(rootPath, file)),
+									line: lineNum,
+									col: colNum,
+									len: searchQuery.length
+								}
+							};
+						}).filter(Boolean);
+
+						quickPick.items = textItems;
+					});
+
+					proc.on("error", err =>
+					{
+						console.error("[CustomSearch] Ripgrep error:", err);
+						quickPick.busy = false;
+					});
+				}, 120);
+
+				return;
+			}
+			// --- END: ? Text Search Mode ---
 
 			const terms = value.trim().toLowerCase().split(/\s+/).filter(Boolean);
 			const rawQueryWithoutSpaces = value.trim().toLowerCase().replace(/\s+/g, "");
@@ -229,12 +356,29 @@ function activate(context)
 
 					editor.selection = new vscode.Selection(range.start, range.end);
 					editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+				} else if(selection.textMatchData)
+				{
+					const { uri, line, col, len } = selection.textMatchData;
+					const doc = await vscode.workspace.openTextDocument(uri);
+					const editor = await vscode.window.showTextDocument(doc);
+
+					const startPos = new vscode.Position(line, col);
+					const endPos = new vscode.Position(line, col + len);
+					const range = new vscode.Range(startPos, endPos);
+
+					editor.selection = new vscode.Selection(startPos, endPos);
+					editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
 				}
 			}
 			quickPick.hide();
 		});
 
-		quickPick.onDidHide(() => quickPick.dispose());
+		quickPick.onDidHide(() =>
+		{
+			if(rgTimeout) clearTimeout(rgTimeout);
+			if(currentRgProcess) currentRgProcess.kill();
+			quickPick.dispose();
+		});
 		quickPick.show();
 	});
 
