@@ -96,9 +96,6 @@ function activate(context)
 		const quickPick = vscode.window.createQuickPick();
 		quickPick.placeholder = "Type to search files and symbols, ? for text, or > for commands...";
 		
-		// Prevent VS Code's internal sorting from interfering with our custom lists
-		quickPick.sortByLabel = false;
-
 		const config = vscode.workspace.getConfiguration("customSearch");
 		const rawHigh = config.get("highPriorityExtensions", []);
 		const rawLow = config.get("lowPriorityExtensions", []);
