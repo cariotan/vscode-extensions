@@ -1,0 +1,67 @@
+{
+	"name": "pure-auto-close-tag",
+	"displayName": "Pure Auto Close Tag (No Slash)",
+	"description": "Closes HTML tags on >, completely ignores /",
+	"version": "1.0.0",
+	"publisher": "local",
+	"engines": {
+		"vscode": "^1.70.0"
+	},
+	"activationEvents": [
+		"onStartupFinished"
+	],
+	"main": "./extension.js",
+	"contributes": {
+		"configuration": {
+			"title": "Pure Auto Close Tag",
+			"properties": {
+				"pureAutoCloseTag.supportedLanguages": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [
+						"html",
+						"javascript",
+						"typescript",
+						"javascriptreact",
+						"typescriptreact",
+						"vue",
+						"svelte",
+						"php",
+						"xml",
+						"astro",
+						"aspnetcorerazor",
+						"razor"
+					],
+					"description": "List of language IDs where auto-closing tags should be active. Use '*' to enable for all languages."
+				},
+				"pureAutoCloseTag.excludedTags": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [
+						"area",
+						"base",
+						"br",
+						"col",
+						"command",
+						"embed",
+						"hr",
+						"img",
+						"input",
+						"keygen",
+						"link",
+						"meta",
+						"param",
+						"source",
+						"track",
+						"wbr"
+					],
+					"description": "List of tags that should not be auto-closed."
+				}
+			}
+		}
+	}
+}
