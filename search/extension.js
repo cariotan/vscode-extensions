@@ -3,6 +3,40 @@ const cp = require("child_process");
 const path = require("path");
 const fs = require("fs");
 
+const SYMBOL_KIND_MAP = {
+	[vscode.SymbolKind.File]: { name: "File", icon: "symbol-file" },
+	[vscode.SymbolKind.Module]: { name: "Module", icon: "symbol-module" },
+	[vscode.SymbolKind.Namespace]: { name: "Namespace", icon: "symbol-namespace" },
+	[vscode.SymbolKind.Package]: { name: "Package", icon: "symbol-package" },
+	[vscode.SymbolKind.Class]: { name: "Class", icon: "symbol-class" },
+	[vscode.SymbolKind.Method]: { name: "Method", icon: "symbol-method" },
+	[vscode.SymbolKind.Property]: { name: "Property", icon: "symbol-property" },
+	[vscode.SymbolKind.Field]: { name: "Field", icon: "symbol-field" },
+	[vscode.SymbolKind.Constructor]: { name: "Constructor", icon: "symbol-constructor" },
+	[vscode.SymbolKind.Enum]: { name: "Enum", icon: "symbol-enum" },
+	[vscode.SymbolKind.Interface]: { name: "Interface", icon: "symbol-interface" },
+	[vscode.SymbolKind.Function]: { name: "Function", icon: "symbol-function" },
+	[vscode.SymbolKind.Variable]: { name: "Variable", icon: "symbol-variable" },
+	[vscode.SymbolKind.Constant]: { name: "Constant", icon: "symbol-constant" },
+	[vscode.SymbolKind.String]: { name: "String", icon: "symbol-string" },
+	[vscode.SymbolKind.Number]: { name: "Number", icon: "symbol-number" },
+	[vscode.SymbolKind.Boolean]: { name: "Boolean", icon: "symbol-boolean" },
+	[vscode.SymbolKind.Array]: { name: "Array", icon: "symbol-array" },
+	[vscode.SymbolKind.Object]: { name: "Object", icon: "symbol-object" },
+	[vscode.SymbolKind.Key]: { name: "Key", icon: "symbol-key" },
+	[vscode.SymbolKind.Null]: { name: "Null", icon: "symbol-null" },
+	[vscode.SymbolKind.EnumMember]: { name: "EnumMember", icon: "symbol-enum-member" },
+	[vscode.SymbolKind.Struct]: { name: "Struct", icon: "symbol-struct" },
+	[vscode.SymbolKind.Event]: { name: "Event", icon: "symbol-event" },
+	[vscode.SymbolKind.Operator]: { name: "Operator", icon: "symbol-operator" },
+	[vscode.SymbolKind.TypeParameter]: { name: "TypeParameter", icon: "symbol-parameter" }
+};
+
+function getSymbolInfo(kind)
+{
+	return SYMBOL_KIND_MAP[kind] || { name: "Symbol", icon: "symbol-misc" };
+}
+
 function getRipgrepPath()
 {
 	const exe = process.platform === "win32" ? "rg.exe" : "rg";
@@ -190,7 +224,7 @@ function activate(context)
 							const normalizedFile = file.replace(/^\.[\\/]/, "").replace(/\\/g, "/");
 
 							return {
-								label: `$(search) ${text.trim()}`,
+								label: `$(search) [Text] ${text.trim()}`,
 								description: `${normalizedFile}:${lineStr}`,
 								alwaysShow: true,
 								textMatchData: {
@@ -202,7 +236,17 @@ function activate(context)
 							};
 						}).filter(Boolean);
 
-						quickPick.items = textItems;
+						if(textItems.length > 0)
+						{
+							quickPick.items = [
+								{ label: "Text Matches", kind: vscode.QuickPickItemKind.Separator },
+								...textItems
+							];
+						}
+						else
+						{
+							quickPick.items = [];
+						}
 					});
 
 					proc.on("error", err =>
@@ -256,13 +300,23 @@ function activate(context)
 				.slice(0, 100);
 
 			const fileItems = filteredFiles.map(file => ({
-				label: `$(file) ${file.fileName}`,
+				label: `$(file) [File] ${file.fileName}`,
 				description: file.relativePath,
 				alwaysShow: true,
 				fileUri: file.uri
 			}));
 
-			quickPick.items = fileItems;
+			if(fileItems.length > 0)
+			{
+				quickPick.items = [
+					{ label: "Files", kind: vscode.QuickPickItemKind.Separator },
+					...fileItems
+				];
+			}
+			else
+			{
+				quickPick.items = [];
+			}
 
 			// 2. Fetch and apply the same scoring logic to symbols
 			if(terms.length > 0)
@@ -310,17 +364,32 @@ function activate(context)
 							})
 							.slice(0, 100);
 
-						const symbolItems = filteredSymbols.map(item => ({
-							label: `$(symbol-misc) ${item.sym.name}`,
-							description: item.relativePath,
-							detail: item.sym.containerName,
-							alwaysShow: true,
-							symbolData: item.sym
-						}));
+						const symbolItems = filteredSymbols.map(item =>
+						{
+							const symInfo = getSymbolInfo(item.sym.kind);
+							return {
+								label: `$(${symInfo.icon}) [${symInfo.name}] ${item.sym.name}`,
+								description: item.relativePath,
+								detail: item.sym.containerName,
+								alwaysShow: true,
+								symbolData: item.sym
+							};
+						});
 
 						if(quickPick.value === value)
 						{
-							quickPick.items = [...fileItems, ...symbolItems];
+							const combined = [];
+							if(fileItems.length > 0)
+							{
+								combined.push({ label: "Files", kind: vscode.QuickPickItemKind.Separator });
+								combined.push(...fileItems);
+							}
+							if(symbolItems.length > 0)
+							{
+								combined.push({ label: "Symbols", kind: vscode.QuickPickItemKind.Separator });
+								combined.push(...symbolItems);
+							}
+							quickPick.items = combined;
 						}
 					}
 				} catch(err)
