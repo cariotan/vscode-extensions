@@ -2,7 +2,7 @@
 	"name": "pure-auto-close-tag",
 	"displayName": "Pure Auto Close Tag (No Slash)",
 	"description": "Closes HTML tags on >, completely ignores /",
-	"version": "1.0.0",
+	"version": "1.0.2",
 	"publisher": "local",
 	"engines": {
 		"vscode": "^1.70.0"
