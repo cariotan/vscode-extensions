@@ -50,7 +50,7 @@ function getRipgrepPath()
 	{
 		if(fs.existsSync(p)) return p;
 	}
-	return "rg";
+	return null;
 }
 
 function getVersionNumber(filePath)
@@ -82,6 +82,53 @@ function processUri(uri)
 	};
 }
 
+// Fallback search in case ripgrep fails or isn't found
+async function fallbackTextSearch(filesData, query, maxResults = 100)
+{
+	const results = [];
+	const lowerQuery = query.toLowerCase();
+
+	for(const file of filesData)
+	{
+		if(results.length >= maxResults) break;
+		try
+		{
+			const content = await fs.promises.readFile(file.uri.fsPath, "utf8");
+			// Skip binary files
+			if(content.includes("\0")) continue;
+
+			const lines = content.split(/\r?\n/);
+			for(let i = 0; i < lines.length; i++)
+			{
+				const lineText = lines[i];
+				if(lineText.length > 300) continue;
+
+				const col = lineText.toLowerCase().indexOf(lowerQuery);
+				if(col !== -1)
+				{
+					results.push({
+						label: `$(search) [Text] ${lineText.trim()}`,
+						description: `${file.relativePath}:${i + 1}`,
+						alwaysShow: true,
+						textMatchData: {
+							uri: file.uri,
+							line: i,
+							col: col,
+							len: query.length
+						}
+					});
+					if(results.length >= maxResults) break;
+				}
+			}
+		}
+		catch(e)
+		{
+			// Ignore unreadable files
+		}
+	}
+	return results;
+}
+
 function activate(context)
 {
 	let cachedFilesData = [];
@@ -92,7 +139,6 @@ function activate(context)
 		const config = vscode.workspace.getConfiguration("customSearch");
 		const excludePatterns = config.get("excludePatterns", []);
 		
-		// Wrap the array in {} to create a valid VS Code glob pattern
 		const excludeGlob = excludePatterns.length > 0 ? `{${excludePatterns.join(',')}}` : null;
 
 		vscode.workspace.findFiles("**/*", excludeGlob).then(files =>
@@ -108,7 +154,6 @@ function activate(context)
 	{
 		const relativePath = vscode.workspace.asRelativePath(uri);
 		
-		// Quick check to stop standard build output from caching
 		if(relativePath.includes("/bin/") || relativePath.includes("/obj/") || relativePath.includes("node_modules")) {
 			return;
 		}
@@ -129,6 +174,8 @@ function activate(context)
 	{
 		const quickPick = vscode.window.createQuickPick();
 		quickPick.placeholder = "Type to search files and symbols, ? for text, or > for commands...";
+		quickPick.matchOnDescription = true;
+		quickPick.matchOnDetail = true;
 		
 		const config = vscode.workspace.getConfiguration("customSearch");
 		const rawHigh = config.get("highPriorityExtensions", []);
@@ -173,9 +220,22 @@ function activate(context)
 				const rootPath = folders[0].uri.fsPath;
 				quickPick.busy = true;
 
-				rgTimeout = setTimeout(() =>
+				rgTimeout = setTimeout(async () =>
 				{
-					// --fixed-strings (-F) prevents regex crashes on special chars like ( ) [ ] ?
+					// If ripgrep binary wasn't found, use the Node fallback immediately
+					if(!rgPath)
+					{
+						const fallbackItems = await fallbackTextSearch(cachedFilesData, searchQuery, 100);
+						if(quickPick.value === value)
+						{
+							quickPick.busy = false;
+							quickPick.items = fallbackItems.length > 0
+								? [{ label: "Text Matches", kind: vscode.QuickPickItemKind.Separator }, ...fallbackItems]
+								: [];
+						}
+						return;
+					}
+
 					const args = [
 						"--vimgrep",
 						"--fixed-strings",
@@ -206,16 +266,15 @@ function activate(context)
 						}
 					});
 
-					proc.on("close", () =>
+					proc.on("close", async (code) =>
 					{
-						// Ignore if this process was superseded by a newer keystroke
 						if(currentRgProcess !== proc) return;
-						quickPick.busy = false;
 
 						const lines = stdout.split(/\r?\n/).filter(Boolean).slice(0, 100);
-						const textItems = lines.map(line =>
+						let textItems = lines.map(line =>
 						{
-							const match = line.match(/^(.*?):(\d+):(\d+):(.*)$/);
+							// Match Windows drive letters (e.g. C:\...) or relative paths
+							const match = line.match(/^(.+?):(\d+):(\d+):(.*)$/);
 							if(!match) return null;
 
 							const [, file, lineStr, colStr, text] = match;
@@ -228,7 +287,7 @@ function activate(context)
 								description: `${normalizedFile}:${lineStr}`,
 								alwaysShow: true,
 								textMatchData: {
-									uri: vscode.Uri.file(path.join(rootPath, file)),
+									uri: vscode.Uri.file(path.isAbsolute(file) ? file : path.join(rootPath, file)),
 									line: lineNum,
 									col: colNum,
 									len: searchQuery.length
@@ -236,23 +295,32 @@ function activate(context)
 							};
 						}).filter(Boolean);
 
-						if(textItems.length > 0)
+						// If rg failed or returned 0 items because of glob/path issues, try fallback
+						if(textItems.length === 0 && code !== 0 && code !== 1)
 						{
-							quickPick.items = [
-								{ label: "Text Matches", kind: vscode.QuickPickItemKind.Separator },
-								...textItems
-							];
+							textItems = await fallbackTextSearch(cachedFilesData, searchQuery, 100);
 						}
-						else
+
+						if(quickPick.value === value)
 						{
-							quickPick.items = [];
+							quickPick.busy = false;
+							quickPick.items = textItems.length > 0
+								? [{ label: "Text Matches", kind: vscode.QuickPickItemKind.Separator }, ...textItems]
+								: [];
 						}
 					});
 
-					proc.on("error", err =>
+					proc.on("error", async (err) =>
 					{
-						console.error("[CustomSearch] Ripgrep error:", err);
-						quickPick.busy = false;
+						console.error("[CustomSearch] Ripgrep error, using fallback:", err);
+						const fallbackItems = await fallbackTextSearch(cachedFilesData, searchQuery, 100);
+						if(quickPick.value === value)
+						{
+							quickPick.busy = false;
+							quickPick.items = fallbackItems.length > 0
+								? [{ label: "Text Matches", kind: vscode.QuickPickItemKind.Separator }, ...fallbackItems]
+								: [];
+						}
 					});
 				}, 120);
 
@@ -264,7 +332,6 @@ function activate(context)
 			const rawQueryWithoutSpaces = value.trim().toLowerCase().replace(/\s+/g, "");
 			const sequence = value.trim().replace(/\s+/g, "");
 			
-			// Use .*? for non-greedy matching to calculate match spread accurately
 			const pattern = sequence.split("").map(char => char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*?");
 			const regex = new RegExp(pattern, "i");
 
@@ -280,8 +347,8 @@ function activate(context)
 					let exactScore = 0;
 					const lowerName = file.fileName.toLowerCase();
 					
-					if(lowerName.includes(rawQueryWithoutSpaces)) exactScore = 2; // Direct filename chunk
-					else if(file.relativePath.toLowerCase().includes(rawQueryWithoutSpaces)) exactScore = 1; // Path chunk
+					if(lowerName.includes(rawQueryWithoutSpaces)) exactScore = 2;
+					else if(file.relativePath.toLowerCase().includes(rawQueryWithoutSpaces)) exactScore = 1;
 					
 					return { ...file, matched: true, exactScore, spread: match[0].length };
 				})
