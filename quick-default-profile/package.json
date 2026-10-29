@@ -1,0 +1,37 @@
+{
+  "name": "quick-default-profile",
+  "displayName": "Quick Default Profile Manager",
+  "description": "Instantly exports and imports the Default profile to/from a pre-configured path with zero prompts.",
+  "version": "1.1.0",
+  "publisher": "local-dev",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "quickProfile.exportDefault",
+        "title": "Quick Profile: Export Default Profile"
+      },
+      {
+        "command": "quickProfile.importDefault",
+        "title": "Quick Profile: Import Default Profile (No Extensions)"
+      }
+    ],
+    "configuration": {
+      "title": "Quick Profile Manager",
+      "properties": {
+        "quickProfile.exportDirectory": {
+          "type": "string",
+          "default": "",
+          "description": "The folder path where Default.code-profile is saved and loaded from (e.g., C:\\Users\\YourName\\Desktop)."
+        }
+      }
+    }
+  }
+}
