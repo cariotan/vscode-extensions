@@ -1,12 +1,12 @@
 const vscode = require('vscode');
 
 /**
- * State-machine parser that determines if the '>' at the end of `text`
- * is genuinely closing an HTML/JSX/Component opening tag.
- * 
- * Returns the tagName if valid, or null if '>' was typed inside a string,
- * expression, comment, comparison, or arrow function.
- */
+	* State-machine parser that determines if the '>' at the end of `text`
+	* is genuinely closing an HTML/JSX/Component opening tag.
+	* 
+	* Returns the tagName if valid, or null if '>' was typed inside a string,
+	* expression, comment, comparison, or arrow function.
+	*/
 function parseOpeningTag(text)
 {
 	// Must end with the '>' we just typed, and not be '/>' or '=>'
@@ -114,11 +114,11 @@ function activate(context)
 
 		// Fetch configuration
 		const config = vscode.workspace.getConfiguration('pureAutoCloseTag');
-		
+
 		// Check if the current language is supported via settings
 		const lang = editor.document.languageId;
 		const supportedLangs = config.get('supportedLanguages') || [];
-		
+
 		// Allow '*' as a wildcard if the user wants it enabled in all languages
 		if(!supportedLangs.includes(lang) && !supportedLangs.includes('*')) return;
 

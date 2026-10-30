@@ -1,12 +1,16 @@
 {
  "name": "custom-quick-open",
  "displayName": "Custom Quick Open",
- "version": "0.0.18",
+ "version": "0.0.20",
  "engines": {
   "vscode": "^1.80.0"
  },
  "activationEvents": [],
  "main": "./extension.js",
+ "scripts": {
+  "package": "node -e \"const fs=require('fs'),{execSync}=require('child_process'),p=JSON.parse(fs.readFileSync('package.json','utf8')),a=process.argv[1],v=p.version.split('.').map(Number);p.version=!a||a==='patch'?[v[0],v[1],v[2]+1].join('.'):a==='minor'?[v[0],v[1]+1,0].join('.'):a==='major'?[v[0]+1,0,0].join('.'):a.replace(/^v/,'');fs.writeFileSync('package.json',JSON.stringify(p,null,1)+'\\n');console.log('Version -> '+p.version);execSync('vsce package --no-dependencies --allow-missing-repository --skip-license',{stdio:'inherit'})\"",
+  "install-local": "node -e \"const fs=require('fs'),{execSync}=require('child_process');execSync('npm run package '+(process.argv[1]||''),{stdio:'inherit'});const p=JSON.parse(fs.readFileSync('package.json','utf8'));execSync('code --install-extension '+p.name+'-'+p.version+'.vsix',{stdio:'inherit'})\""
+ },
  "contributes": {
   "commands": [
    {
@@ -22,7 +26,11 @@
      "items": {
       "type": "string"
      },
-     "default": [".cshtml", ".cs", "/views"],
+     "default": [
+      ".cshtml",
+      ".cs",
+      "/views"
+     ],
      "description": "Words or paths to sort at the top of file search results (e.g. .cshtml, /views)."
     },
     "customSearch.lowPriorityWords": {
@@ -30,7 +38,11 @@
      "items": {
       "type": "string"
      },
-     "default": [".map", ".log", "/wwwroot"],
+     "default": [
+      ".map",
+      ".log",
+      "/wwwroot"
+     ],
      "description": "Words or paths to sort at the bottom of file search results (e.g. .map, /wwwroot)."
     },
     "customSearch.excludePatterns": {
@@ -38,7 +50,12 @@
      "items": {
       "type": "string"
      },
-     "default": ["**/node_modules/**", "**/.git/**", "**/bin/**", "**/obj/**"],
+     "default": [
+      "**/node_modules/**",
+      "**/.git/**",
+      "**/bin/**",
+      "**/obj/**"
+     ],
      "description": "Glob patterns to fully exclude from file search."
     }
    }

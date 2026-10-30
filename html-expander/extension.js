@@ -5,24 +5,24 @@ function activate(context)
 	let disposable = vscode.commands.registerCommand('html-expander.expandTag', function ()
 	{
 		let editor = vscode.window.activeTextEditor
-		if (!editor)
+		if(!editor)
 		{
 			return
 		}
 
 		let document = editor.document
 		let position = editor.selection.active
-		
+
 		// Regex to find the full tag on a single line
 		let tagRegex = /<(?<tag>[a-zA-Z0-9]+)(?<attrs>[^>]*)>(?<content>.*)<\/\k<tag>>/
 		let range = document.getWordRangeAtPosition(position, tagRegex)
 
-		if (range)
+		if(range)
 		{
 			let text = document.getText(range)
 			let match = tagRegex.exec(text)
 
-			if (match)
+			if(match)
 			{
 				// Get the current line's text to find its leading whitespace
 				let line = document.lineAt(range.start.line)
@@ -33,10 +33,10 @@ function activate(context)
 				// Line 1: The opening tag (already correctly placed)
 				// Line 2: Current indent + 1 tab + content
 				// Line 3: Current indent + closing tag
-				let expanded = '<' + match.groups.tag + match.groups.attrs + '>\n' + 
-					currentIndent + '\t' + match.groups.content.trim() + '\n' + 
+				let expanded = '<' + match.groups.tag + match.groups.attrs + '>\n' +
+					currentIndent + '\t' + match.groups.content.trim() + '\n' +
 					currentIndent + '</' + match.groups.tag + '>'
-				
+
 				editor.edit(function (editBuilder)
 				{
 					editBuilder.replace(range, expanded)
@@ -48,7 +48,7 @@ function activate(context)
 	context.subscriptions.push(disposable)
 }
 
-function deactivate() {}
+function deactivate() { }
 
 module.exports = {
 	activate,

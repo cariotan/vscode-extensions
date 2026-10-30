@@ -1,39 +1,43 @@
 {
- "name": "file-rename",
- "displayName": "File Rename",
- "description": "Smartly rename files with automated casing suggestions based on language settings.",
- "version": "1.0.1",
- "publisher": "AI",
- "engines": {
-  "vscode": "^1.75.0"
- },
- "categories": [
-  "Other"
- ],
- "activationEvents": [],
- "main": "./extension.js",
- "contributes": {
-  "commands": [
-   {
-    "command": "editor.renameFile",
-    "title": "Rename File"
-   }
-  ],
-  "configuration": {
-   "type": "object",
-   "title": "File Rename Configuration",
-   "properties": {
-    "renameFile.languageNamingStyles": {
-     "type": "object",
-     "default": {
-      "*": "pascalCase",
-      "typescript": "camelCase",
-      "javascript": "camelCase",
-      "python": "snake_case"
-     },
-     "description": "Configure default naming style per language ID or wildcard (*)."
-    }
-   }
-  }
- }
+	"name": "file-rename",
+	"displayName": "File Rename",
+	"description": "Smartly rename files with automated casing suggestions based on language settings.",
+	"version": "1.0.1",
+	"publisher": "AI",
+	"engines": {
+		"vscode": "^1.75.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [],
+	"main": "./extension.js",
+	"scripts": {
+		"package": "node -e \"const fs=require('fs'),{execSync}=require('child_process'),p=JSON.parse(fs.readFileSync('package.json','utf8')),a=process.argv[1],v=p.version.split('.').map(Number);p.version=!a||a==='patch'?[v[0],v[1],v[2]+1].join('.'):a==='minor'?[v[0],v[1]+1,0].join('.'):a==='major'?[v[0]+1,0,0].join('.'):a.replace(/^v/,'');fs.writeFileSync('package.json',JSON.stringify(p,null,1)+'\\n');console.log('Version -> '+p.version);execSync('vsce package --no-dependencies --allow-missing-repository --skip-license',{stdio:'inherit'})\"",
+		"install-local": "node -e \"const fs=require('fs'),{execSync}=require('child_process');execSync('npm run package '+(process.argv[1]||''),{stdio:'inherit'});const p=JSON.parse(fs.readFileSync('package.json','utf8'));execSync('code --install-extension '+p.name+'-'+p.version+'.vsix',{stdio:'inherit'})\""
+	},
+	"contributes": {
+		"commands": [
+			{
+				"command": "editor.renameFile",
+				"title": "Rename File"
+			}
+		],
+		"configuration": {
+			"type": "object",
+			"title": "File Rename Configuration",
+			"properties": {
+				"renameFile.languageNamingStyles": {
+					"type": "object",
+					"default": {
+						"*": "pascalCase",
+						"typescript": "camelCase",
+						"javascript": "camelCase",
+						"python": "snake_case"
+					},
+					"description": "Configure default naming style per language ID or wildcard (*)."
+				}
+			}
+		}
+	}
 }
