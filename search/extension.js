@@ -176,6 +176,7 @@ function activate(context)
 		quickPick.placeholder = "Type to search files and symbols, ? for text, or > for commands...";
 		quickPick.matchOnDescription = true;
 		quickPick.matchOnDetail = true;
+		quickPick.sortByLabel = false; // Prevents VS Code from overriding custom sort order
 		
 		const config = vscode.workspace.getConfiguration("customSearch");
 		const rawHigh = config.get("highPriorityExtensions", []);
@@ -347,7 +348,9 @@ function activate(context)
 					let exactScore = 0;
 					const lowerName = file.fileName.toLowerCase();
 					
-					if(lowerName.includes(rawQueryWithoutSpaces)) exactScore = 2;
+					if(lowerName === rawQueryWithoutSpaces) exactScore = 4;
+					else if(lowerName.startsWith(rawQueryWithoutSpaces)) exactScore = 3;
+					else if(lowerName.includes(rawQueryWithoutSpaces)) exactScore = 2;
 					else if(file.relativePath.toLowerCase().includes(rawQueryWithoutSpaces)) exactScore = 1;
 					
 					return { ...file, matched: true, exactScore, spread: match[0].length };
@@ -410,7 +413,9 @@ function activate(context)
 								let exactScore = 0;
 								const lowerName = sym.name.toLowerCase();
 								
-								if(lowerName.includes(rawQueryWithoutSpaces)) exactScore = 2;
+								if(lowerName === rawQueryWithoutSpaces) exactScore = 4;
+								else if(lowerName.startsWith(rawQueryWithoutSpaces)) exactScore = 3;
+								else if(lowerName.includes(rawQueryWithoutSpaces)) exactScore = 2;
 								else if(searchableTarget.toLowerCase().includes(rawQueryWithoutSpaces)) exactScore = 1;
 
 								return { 
