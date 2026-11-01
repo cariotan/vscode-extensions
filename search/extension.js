@@ -66,8 +66,7 @@ function processUri(uri)
 	const relativePath = vscode.workspace.asRelativePath(uri);
 	const parts = relativePath.split("/");
 	const fileName = parts.pop() || relativePath;
-	const dirPath = parts.join("/");
-	
+
 	const pathLower = uri.path.toLowerCase();
 	const lastDot = pathLower.lastIndexOf(".");
 	const ext = lastDot !== -1 ? pathLower.substring(lastDot) : "";
@@ -76,7 +75,8 @@ function processUri(uri)
 		uri,
 		relativePath,
 		fileName,
-		searchableTarget: `${fileName} ${dirPath} ${fileName}`,
+		lowerFileName: fileName.toLowerCase(),
+		lowerRelativePath: relativePath.toLowerCase(),
 		version: getVersionNumber(relativePath),
 		ext
 	};
@@ -138,8 +138,8 @@ function activate(context)
 	{
 		const config = vscode.workspace.getConfiguration("customSearch");
 		const excludePatterns = config.get("excludePatterns", []);
-		
-		const excludeGlob = excludePatterns.length > 0 ? `{${excludePatterns.join(',')}}` : null;
+
+		const excludeGlob = excludePatterns.length > 0 ? `{${excludePatterns.join(",")}}` : null;
 
 		vscode.workspace.findFiles("**/*", excludeGlob).then(files =>
 		{
@@ -153,8 +153,9 @@ function activate(context)
 	watcher.onDidCreate(uri =>
 	{
 		const relativePath = vscode.workspace.asRelativePath(uri);
-		
-		if(relativePath.includes("/bin/") || relativePath.includes("/obj/") || relativePath.includes("node_modules")) {
+
+		if(relativePath.includes("/bin/") || relativePath.includes("/obj/") || relativePath.includes("node_modules"))
+		{
 			return;
 		}
 
@@ -177,12 +178,12 @@ function activate(context)
 		quickPick.matchOnDescription = true;
 		quickPick.matchOnDetail = true;
 		quickPick.sortByLabel = false; // Prevents VS Code from overriding custom sort order
-		
+
 		const config = vscode.workspace.getConfiguration("customSearch");
 		const rawHigh = config.get("highPriorityExtensions", []);
 		const rawLow = config.get("lowPriorityExtensions", []);
 		const excludePatterns = config.get("excludePatterns", []);
-		
+
 		const highPriorityExts = new Set(rawHigh.map(e => e.startsWith(".") ? e.toLowerCase() : `.${e.toLowerCase()}`));
 		const lowPriorityExts = new Set(rawLow.map(e => e.startsWith(".") ? e.toLowerCase() : `.${e.toLowerCase()}`));
 
@@ -331,36 +332,34 @@ function activate(context)
 
 			const terms = value.trim().toLowerCase().split(/\s+/).filter(Boolean);
 			const rawQueryWithoutSpaces = value.trim().toLowerCase().replace(/\s+/g, "");
-			const sequence = value.trim().replace(/\s+/g, "");
-			
-			const pattern = sequence.split("").map(char => char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*?");
-			const regex = new RegExp(pattern, "i");
 
-			// 1. Process files with exact match and spread scoring
+			// 1. Process files with space-separated substring matching
 			const filteredFiles = cachedFilesData
 				.map(file =>
 				{
-					if(terms.length === 0) return { ...file, matched: true, exactScore: 0, spread: 0 };
-					
-					const match = regex.exec(file.searchableTarget);
-					if(!match) return { ...file, matched: false };
-					
+					if(terms.length === 0) return { ...file, matched: true, exactScore: 0 };
+
+					const lowerName = file.lowerFileName;
+					const lowerPath = file.lowerRelativePath;
+
+					// Every space-separated word must appear in the file name or relative path
+					const allTermsMatch = terms.every(term => lowerPath.includes(term));
+					if(!allTermsMatch) return { ...file, matched: false };
+
 					let exactScore = 0;
-					const lowerName = file.fileName.toLowerCase();
-					
-					if(lowerName === rawQueryWithoutSpaces) exactScore = 4;
-					else if(lowerName.startsWith(rawQueryWithoutSpaces)) exactScore = 3;
-					else if(lowerName.includes(rawQueryWithoutSpaces)) exactScore = 2;
-					else if(file.relativePath.toLowerCase().includes(rawQueryWithoutSpaces)) exactScore = 1;
-					
-					return { ...file, matched: true, exactScore, spread: match[0].length };
+					if(lowerName === rawQueryWithoutSpaces) exactScore = 5;
+					else if(lowerName.startsWith(rawQueryWithoutSpaces)) exactScore = 4;
+					else if(lowerName.includes(rawQueryWithoutSpaces)) exactScore = 3;
+					else if(terms.every(term => lowerName.includes(term))) exactScore = 2;
+					else exactScore = 1;
+
+					return { ...file, matched: true, exactScore };
 				})
 				.filter(f => f.matched)
 				.sort((a, b) =>
 				{
 					if(a.exactScore !== b.exactScore) return b.exactScore - a.exactScore;
-					if(a.spread !== b.spread) return a.spread - b.spread;
-					
+
 					const priorityA = highPriorityExts.has(a.ext) ? 1 : (lowPriorityExts.has(a.ext) ? -1 : 0);
 					const priorityB = highPriorityExts.has(b.ext) ? 1 : (lowPriorityExts.has(b.ext) ? -1 : 0);
 
@@ -406,23 +405,23 @@ function activate(context)
 							.map(sym =>
 							{
 								const relativePath = vscode.workspace.asRelativePath(sym.location.uri);
-								const searchableTarget = `${sym.name} ${sym.containerName || ""} ${relativePath}`;
-								const match = regex.exec(searchableTarget);
-								if(!match) return { sym, matched: false };
+								const lowerName = sym.name.toLowerCase();
+								const searchableTarget = `${lowerName} ${(sym.containerName || "").toLowerCase()} ${relativePath.toLowerCase()}`;
+
+								const allTermsMatch = terms.every(term => searchableTarget.includes(term));
+								if(!allTermsMatch) return { sym, matched: false };
 
 								let exactScore = 0;
-								const lowerName = sym.name.toLowerCase();
-								
-								if(lowerName === rawQueryWithoutSpaces) exactScore = 4;
-								else if(lowerName.startsWith(rawQueryWithoutSpaces)) exactScore = 3;
-								else if(lowerName.includes(rawQueryWithoutSpaces)) exactScore = 2;
-								else if(searchableTarget.toLowerCase().includes(rawQueryWithoutSpaces)) exactScore = 1;
+								if(lowerName === rawQueryWithoutSpaces) exactScore = 5;
+								else if(lowerName.startsWith(rawQueryWithoutSpaces)) exactScore = 4;
+								else if(lowerName.includes(rawQueryWithoutSpaces)) exactScore = 3;
+								else if(terms.every(term => lowerName.includes(term))) exactScore = 2;
+								else exactScore = 1;
 
-								return { 
-									sym, 
+								return {
+									sym,
 									relativePath,
 									exactScore,
-									spread: match[0].length,
 									matched: true
 								};
 							})
@@ -430,8 +429,7 @@ function activate(context)
 							.sort((a, b) =>
 							{
 								if(a.exactScore !== b.exactScore) return b.exactScore - a.exactScore;
-								if(a.spread !== b.spread) return a.spread - b.spread;
-								
+
 								return getVersionNumber(b.relativePath) - getVersionNumber(a.relativePath);
 							})
 							.slice(0, 100);
@@ -464,10 +462,12 @@ function activate(context)
 							quickPick.items = combined;
 						}
 					}
-				} catch(err)
+				}
+				catch(err)
 				{
 					console.error("[CustomSearch] Symbol search error:", err);
-				} finally
+				}
+				finally
 				{
 					if(quickPick.value === value)
 					{
@@ -486,7 +486,8 @@ function activate(context)
 				{
 					const doc = await vscode.workspace.openTextDocument(selection.fileUri);
 					await vscode.window.showTextDocument(doc);
-				} else if(selection.symbolData)
+				}
+				else if(selection.symbolData)
 				{
 					const doc = await vscode.workspace.openTextDocument(selection.symbolData.location.uri);
 					const editor = await vscode.window.showTextDocument(doc);
@@ -494,7 +495,8 @@ function activate(context)
 
 					editor.selection = new vscode.Selection(range.start, range.end);
 					editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
-				} else if(selection.textMatchData)
+				}
+				else if(selection.textMatchData)
 				{
 					const { uri, line, col, len } = selection.textMatchData;
 					const doc = await vscode.workspace.openTextDocument(uri);
