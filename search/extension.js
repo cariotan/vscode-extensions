@@ -189,6 +189,7 @@ function activate(context)
 
 		let rgTimeout = null;
 		let currentRgProcess = null;
+		let lastFileItems = []; // Stores the last non-empty file search results
 
 		quickPick.onDidChangeValue(async (value) =>
 		{
@@ -375,11 +376,18 @@ function activate(context)
 				fileUri: file.uri
 			}));
 
+			// Keep previous file results if current query yields no file matches
 			if(fileItems.length > 0)
+			{
+				lastFileItems = fileItems;
+			}
+			const activeFileItems = fileItems.length > 0 ? fileItems : lastFileItems;
+
+			if(activeFileItems.length > 0)
 			{
 				quickPick.items = [
 					{ label: "Files", kind: vscode.QuickPickItemKind.Separator },
-					...fileItems
+					...activeFileItems
 				];
 			}
 			else
@@ -449,10 +457,10 @@ function activate(context)
 						if(quickPick.value === value)
 						{
 							const combined = [];
-							if(fileItems.length > 0)
+							if(activeFileItems.length > 0)
 							{
 								combined.push({ label: "Files", kind: vscode.QuickPickItemKind.Separator });
-								combined.push(...fileItems);
+								combined.push(...activeFileItems);
 							}
 							if(symbolItems.length > 0)
 							{
