@@ -174,7 +174,7 @@ function activate(context)
 	let disposable = vscode.commands.registerCommand("customSearch.start", () =>
 	{
 		const quickPick = vscode.window.createQuickPick();
-		quickPick.placeholder = "Type to search files and symbols, ? for text, or > for commands...";
+		quickPick.placeholder = "Type to search files and symbols, add ? for text, or > for commands...";
 		quickPick.matchOnDescription = true;
 		quickPick.matchOnDetail = true;
 		quickPick.sortByLabel = false; // Prevents VS Code from overriding custom sort order
@@ -200,17 +200,21 @@ function activate(context)
 				currentRgProcess = null;
 			}
 
-			if(value.startsWith(">"))
+			const trimmedValue = value.trim();
+
+			// --- > Command Palette Mode (supports >query or query>) ---
+			if(trimmedValue.startsWith(">") || trimmedValue.endsWith(">"))
 			{
+				const cmdQuery = trimmedValue.replace(/^>+|>+$/g, "").trim();
 				quickPick.hide();
-				vscode.commands.executeCommand("workbench.action.showCommands");
+				vscode.commands.executeCommand("workbench.action.quickOpen", `>${cmdQuery}`);
 				return;
 			}
 
-			// --- ? Text Search Mode ---
-			if(value.startsWith("?"))
+			// --- ? Text Search Mode (supports ?query or query?) ---
+			if(trimmedValue.startsWith("?") || trimmedValue.endsWith("?"))
 			{
-				const searchQuery = value.slice(1).trim();
+				const searchQuery = trimmedValue.replace(/^\?+|\?+$/g, "").trim();
 				const folders = vscode.workspace.workspaceFolders;
 
 				if(!folders || searchQuery.length === 0)
@@ -533,7 +537,9 @@ function activate(context)
 	context.subscriptions.push(disposable);
 }
 
-function deactivate() { }
+function deactivate()
+{
+}
 
 module.exports = {
 	activate,
