@@ -1,0 +1,12 @@
+{
+	"name": "csharp-auto-using",
+	"displayName": "C# Auto Using",
+	"version": "1.0.0",
+	"engines": {
+		"vscode": "^1.85.0"
+	},
+	"activationEvents": [
+		"onLanguage:csharp"
+	],
+	"main": "./extension.js"
+}
