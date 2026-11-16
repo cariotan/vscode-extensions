@@ -1,75 +1,75 @@
-const vscode = require("vscode");
-const cp = require("child_process");
-const path = require("path");
-const fs = require("fs");
+const vscode = require('vscode')
+const cp = require('child_process')
+const path = require('path')
+const fs = require('fs')
 
 const SYMBOL_KIND_MAP = {
-	[vscode.SymbolKind.File]: { name: "File", icon: "symbol-file" },
-	[vscode.SymbolKind.Module]: { name: "Module", icon: "symbol-module" },
-	[vscode.SymbolKind.Namespace]: { name: "Namespace", icon: "symbol-namespace" },
-	[vscode.SymbolKind.Package]: { name: "Package", icon: "symbol-package" },
-	[vscode.SymbolKind.Class]: { name: "Class", icon: "symbol-class" },
-	[vscode.SymbolKind.Method]: { name: "Method", icon: "symbol-method" },
-	[vscode.SymbolKind.Property]: { name: "Property", icon: "symbol-property" },
-	[vscode.SymbolKind.Field]: { name: "Field", icon: "symbol-field" },
-	[vscode.SymbolKind.Constructor]: { name: "Constructor", icon: "symbol-constructor" },
-	[vscode.SymbolKind.Enum]: { name: "Enum", icon: "symbol-enum" },
-	[vscode.SymbolKind.Interface]: { name: "Interface", icon: "symbol-interface" },
-	[vscode.SymbolKind.Function]: { name: "Function", icon: "symbol-function" },
-	[vscode.SymbolKind.Variable]: { name: "Variable", icon: "symbol-variable" },
-	[vscode.SymbolKind.Constant]: { name: "Constant", icon: "symbol-constant" },
-	[vscode.SymbolKind.String]: { name: "String", icon: "symbol-string" },
-	[vscode.SymbolKind.Number]: { name: "Number", icon: "symbol-number" },
-	[vscode.SymbolKind.Boolean]: { name: "Boolean", icon: "symbol-boolean" },
-	[vscode.SymbolKind.Array]: { name: "Array", icon: "symbol-array" },
-	[vscode.SymbolKind.Object]: { name: "Object", icon: "symbol-object" },
-	[vscode.SymbolKind.Key]: { name: "Key", icon: "symbol-key" },
-	[vscode.SymbolKind.Null]: { name: "Null", icon: "symbol-null" },
-	[vscode.SymbolKind.EnumMember]: { name: "EnumMember", icon: "symbol-enum-member" },
-	[vscode.SymbolKind.Struct]: { name: "Struct", icon: "symbol-struct" },
-	[vscode.SymbolKind.Event]: { name: "Event", icon: "symbol-event" },
-	[vscode.SymbolKind.Operator]: { name: "Operator", icon: "symbol-operator" },
-	[vscode.SymbolKind.TypeParameter]: { name: "TypeParameter", icon: "symbol-parameter" }
-};
+	[vscode.SymbolKind.File]: { name: 'File', icon: 'symbol-file' },
+	[vscode.SymbolKind.Module]: { name: 'Module', icon: 'symbol-module' },
+	[vscode.SymbolKind.Namespace]: { name: 'Namespace', icon: 'symbol-namespace' },
+	[vscode.SymbolKind.Package]: { name: 'Package', icon: 'symbol-package' },
+	[vscode.SymbolKind.Class]: { name: 'Class', icon: 'symbol-class' },
+	[vscode.SymbolKind.Method]: { name: 'Method', icon: 'symbol-method' },
+	[vscode.SymbolKind.Property]: { name: 'Property', icon: 'symbol-property' },
+	[vscode.SymbolKind.Field]: { name: 'Field', icon: 'symbol-field' },
+	[vscode.SymbolKind.Constructor]: { name: 'Constructor', icon: 'symbol-constructor' },
+	[vscode.SymbolKind.Enum]: { name: 'Enum', icon: 'symbol-enum' },
+	[vscode.SymbolKind.Interface]: { name: 'Interface', icon: 'symbol-interface' },
+	[vscode.SymbolKind.Function]: { name: 'Function', icon: 'symbol-function' },
+	[vscode.SymbolKind.Variable]: { name: 'Variable', icon: 'symbol-variable' },
+	[vscode.SymbolKind.Constant]: { name: 'Constant', icon: 'symbol-constant' },
+	[vscode.SymbolKind.String]: { name: 'String', icon: 'symbol-string' },
+	[vscode.SymbolKind.Number]: { name: 'Number', icon: 'symbol-number' },
+	[vscode.SymbolKind.Boolean]: { name: 'Boolean', icon: 'symbol-boolean' },
+	[vscode.SymbolKind.Array]: { name: 'Array', icon: 'symbol-array' },
+	[vscode.SymbolKind.Object]: { name: 'Object', icon: 'symbol-object' },
+	[vscode.SymbolKind.Key]: { name: 'Key', icon: 'symbol-key' },
+	[vscode.SymbolKind.Null]: { name: 'Null', icon: 'symbol-null' },
+	[vscode.SymbolKind.EnumMember]: { name: 'EnumMember', icon: 'symbol-enum-member' },
+	[vscode.SymbolKind.Struct]: { name: 'Struct', icon: 'symbol-struct' },
+	[vscode.SymbolKind.Event]: { name: 'Event', icon: 'symbol-event' },
+	[vscode.SymbolKind.Operator]: { name: 'Operator', icon: 'symbol-operator' },
+	[vscode.SymbolKind.TypeParameter]: { name: 'TypeParameter', icon: 'symbol-parameter' }
+}
 
 function getSymbolInfo(kind)
 {
-	return SYMBOL_KIND_MAP[kind] || { name: "Symbol", icon: "symbol-misc" };
+	return SYMBOL_KIND_MAP[kind] || { name: 'Symbol', icon: 'symbol-misc' }
 }
 
 function getRipgrepPath()
 {
-	const exe = process.platform === "win32" ? "rg.exe" : "rg";
+	const exe = process.platform === 'win32' ? 'rg.exe' : 'rg'
 	const possiblePaths = [
-		path.join(vscode.env.appRoot, "node_modules", "@vscode", "ripgrep", "bin", exe),
-		path.join(vscode.env.appRoot, "node_modules.asar.unpacked", "@vscode", "ripgrep", "bin", exe),
-		path.join(vscode.env.appRoot, "node_modules", "vscode-ripgrep", "bin", exe),
-		path.join(vscode.env.appRoot, "node_modules.asar.unpacked", "vscode-ripgrep", "bin", exe)
-	];
+		path.join(vscode.env.appRoot, 'node_modules', '@vscode', 'ripgrep', 'bin', exe),
+		path.join(vscode.env.appRoot, 'node_modules.asar.unpacked', '@vscode', 'ripgrep', 'bin', exe),
+		path.join(vscode.env.appRoot, 'node_modules', 'vscode-ripgrep', 'bin', exe),
+		path.join(vscode.env.appRoot, 'node_modules.asar.unpacked', 'vscode-ripgrep', 'bin', exe)
+	]
 	for(const p of possiblePaths)
 	{
-		if(fs.existsSync(p)) return p;
+		if(fs.existsSync(p)) return p
 	}
-	return null;
+	return null
 }
 
 function getVersionNumber(filePath)
 {
-	const matches = filePath.match(/v(\d+)/gi);
-	if(!matches) return 0;
-	const numbers = matches.map(m => parseInt(m.slice(1), 10));
-	return Math.max(...numbers);
+	const matches = filePath.match(/v(\d+)/gi)
+	if(!matches) return 0
+	const numbers = matches.map(m => parseInt(m.slice(1), 10))
+	return Math.max(...numbers)
 }
 
 function processUri(uri)
 {
-	const relativePath = vscode.workspace.asRelativePath(uri);
-	const parts = relativePath.split("/");
-	const fileName = parts.pop() || relativePath;
+	const relativePath = vscode.workspace.asRelativePath(uri)
+	const parts = relativePath.split('/')
+	const fileName = parts.pop() || relativePath
 
-	const pathLower = uri.path.toLowerCase();
-	const lastDot = pathLower.lastIndexOf(".");
-	const ext = lastDot !== -1 ? pathLower.substring(lastDot) : "";
+	const pathLower = uri.path.toLowerCase()
+	const lastDot = pathLower.lastIndexOf('.')
+	const ext = lastDot !== -1 ? pathLower.substring(lastDot) : ''
 
 	return {
 		uri,
@@ -79,31 +79,31 @@ function processUri(uri)
 		lowerRelativePath: relativePath.toLowerCase(),
 		version: getVersionNumber(relativePath),
 		ext
-	};
+	}
 }
 
 // Fallback search in case ripgrep fails or isn't found
 async function fallbackTextSearch(filesData, query, maxResults = 100)
 {
-	const results = [];
-	const lowerQuery = query.toLowerCase();
+	const results = []
+	const lowerQuery = query.toLowerCase()
 
 	for(const file of filesData)
 	{
-		if(results.length >= maxResults) break;
+		if(results.length >= maxResults) break
 		try
 		{
-			const content = await fs.promises.readFile(file.uri.fsPath, "utf8");
+			const content = await fs.promises.readFile(file.uri.fsPath, 'utf8')
 			// Skip binary files
-			if(content.includes("\0")) continue;
+			if(content.includes('\0')) continue
 
-			const lines = content.split(/\r?\n/);
+			const lines = content.split(/\r?\n/)
 			for(let i = 0; i < lines.length; i++)
 			{
-				const lineText = lines[i];
-				if(lineText.length > 300) continue;
+				const lineText = lines[i]
+				if(lineText.length > 300) continue
 
-				const col = lineText.toLowerCase().indexOf(lowerQuery);
+				const col = lineText.toLowerCase().indexOf(lowerQuery)
 				if(col !== -1)
 				{
 					results.push({
@@ -116,8 +116,8 @@ async function fallbackTextSearch(filesData, query, maxResults = 100)
 							col: col,
 							len: query.length
 						}
-					});
-					if(results.length >= maxResults) break;
+					})
+					if(results.length >= maxResults) break
 				}
 			}
 		}
@@ -126,168 +126,168 @@ async function fallbackTextSearch(filesData, query, maxResults = 100)
 			// Ignore unreadable files
 		}
 	}
-	return results;
+	return results
 }
 
 function activate(context)
 {
-	let cachedFilesData = [];
-	const rgPath = getRipgrepPath();
+	let cachedFilesData = []
+	const rgPath = getRipgrepPath()
 
 	function refreshFiles()
 	{
-		const config = vscode.workspace.getConfiguration("customSearch");
-		const excludePatterns = config.get("excludePatterns", []);
+		const config = vscode.workspace.getConfiguration('customSearch')
+		const excludePatterns = config.get('excludePatterns', [])
 
-		const excludeGlob = excludePatterns.length > 0 ? `{${excludePatterns.join(",")}}` : null;
+		const excludeGlob = excludePatterns.length > 0 ? `{${excludePatterns.join(',')}}` : null
 
-		vscode.workspace.findFiles("**/*", excludeGlob).then(files =>
+		vscode.workspace.findFiles('**/*', excludeGlob).then(files =>
 		{
-			cachedFilesData = files.map(processUri);
-		});
+			cachedFilesData = files.map(processUri)
+		})
 	}
 
-	refreshFiles();
+	refreshFiles()
 
-	const watcher = vscode.workspace.createFileSystemWatcher("**/*");
+	const watcher = vscode.workspace.createFileSystemWatcher('**/*')
 	watcher.onDidCreate(uri =>
 	{
-		const relativePath = vscode.workspace.asRelativePath(uri);
+		const relativePath = vscode.workspace.asRelativePath(uri)
 
-		if(relativePath.includes("/bin/") || relativePath.includes("/obj/") || relativePath.includes("node_modules"))
+		if(relativePath.includes('/bin/') || relativePath.includes('/obj/') || relativePath.includes('node_modules'))
 		{
-			return;
+			return
 		}
 
 		if(!cachedFilesData.some(f => f.uri.toString() === uri.toString()))
 		{
-			cachedFilesData.push(processUri(uri));
+			cachedFilesData.push(processUri(uri))
 		}
-	});
+	})
 	watcher.onDidDelete(uri =>
 	{
-		cachedFilesData = cachedFilesData.filter(f => f.uri.toString() !== uri.toString());
-	});
+		cachedFilesData = cachedFilesData.filter(f => f.uri.toString() !== uri.toString())
+	})
 
-	context.subscriptions.push(watcher);
+	context.subscriptions.push(watcher)
 
-	let disposable = vscode.commands.registerCommand("customSearch.start", () =>
+	let disposable = vscode.commands.registerCommand('customSearch.start', () =>
 	{
-		const quickPick = vscode.window.createQuickPick();
-		quickPick.placeholder = "Type to search files and symbols, add ? for text, or > for commands...";
-		quickPick.matchOnDescription = true;
-		quickPick.matchOnDetail = true;
-		quickPick.sortByLabel = false; // Prevents VS Code from overriding custom sort order
+		const quickPick = vscode.window.createQuickPick()
+		quickPick.placeholder = 'Type to search files and symbols, add ? for text, or > for commands...'
+		quickPick.matchOnDescription = true
+		quickPick.matchOnDetail = true
+		quickPick.sortByLabel = false // Prevents VS Code from overriding custom sort order
 
-		const config = vscode.workspace.getConfiguration("customSearch");
-		const rawHigh = config.get("highPriorityExtensions", []);
-		const rawLow = config.get("lowPriorityExtensions", []);
-		const excludePatterns = config.get("excludePatterns", []);
+		const config = vscode.workspace.getConfiguration('customSearch')
+		const rawHigh = config.get('highPriorityExtensions', [])
+		const rawLow = config.get('lowPriorityExtensions', [])
+		const excludePatterns = config.get('excludePatterns', [])
 
-		const highPriorityExts = new Set(rawHigh.map(e => e.startsWith(".") ? e.toLowerCase() : `.${e.toLowerCase()}`));
-		const lowPriorityExts = new Set(rawLow.map(e => e.startsWith(".") ? e.toLowerCase() : `.${e.toLowerCase()}`));
+		const highPriorityExts = new Set(rawHigh.map(e => e.startsWith('.') ? e.toLowerCase() : `.${e.toLowerCase()}`))
+		const lowPriorityExts = new Set(rawLow.map(e => e.startsWith('.') ? e.toLowerCase() : `.${e.toLowerCase()}`))
 
-		let rgTimeout = null;
-		let currentRgProcess = null;
-		let lastFileItems = []; // Stores the last non-empty file search results
+		let rgTimeout = null
+		let currentRgProcess = null
+		let lastFileItems = [] // Stores the last non-empty file search results
 
 		quickPick.onDidChangeValue(async (value) =>
 		{
-			if(rgTimeout) clearTimeout(rgTimeout);
+			if(rgTimeout) clearTimeout(rgTimeout)
 			if(currentRgProcess)
 			{
-				currentRgProcess.kill();
-				currentRgProcess = null;
+				currentRgProcess.kill()
+				currentRgProcess = null
 			}
 
-			const trimmedValue = value.trim();
+			const trimmedValue = value.trim()
 
 			// --- > Command Palette Mode (supports >query or query>) ---
-			if(trimmedValue.startsWith(">") || trimmedValue.endsWith(">"))
+			if(trimmedValue.startsWith('>') || trimmedValue.endsWith('>'))
 			{
-				const cmdQuery = trimmedValue.replace(/^>+|>+$/g, "").trim();
-				quickPick.hide();
-				vscode.commands.executeCommand("workbench.action.quickOpen", `>${cmdQuery}`);
-				return;
+				const cmdQuery = trimmedValue.replace(/^>+|>+$/g, '').trim()
+				quickPick.hide()
+				vscode.commands.executeCommand('workbench.action.quickOpen', `>${cmdQuery}`)
+				return
 			}
 
 			// --- ? Text Search Mode (supports ?query or query?) ---
-			if(trimmedValue.startsWith("?") || trimmedValue.endsWith("?"))
+			if(trimmedValue.startsWith('?') || trimmedValue.endsWith('?'))
 			{
-				const searchQuery = trimmedValue.replace(/^\?+|\?+$/g, "").trim();
-				const folders = vscode.workspace.workspaceFolders;
+				const searchQuery = trimmedValue.replace(/^\?+|\?+$/g, '').trim()
+				const folders = vscode.workspace.workspaceFolders
 
 				if(!folders || searchQuery.length === 0)
 				{
-					quickPick.items = [];
-					quickPick.busy = false;
-					return;
+					quickPick.items = []
+					quickPick.busy = false
+					return
 				}
 
-				const rootPath = folders[0].uri.fsPath;
-				quickPick.busy = true;
+				const rootPath = folders[0].uri.fsPath
+				quickPick.busy = true
 
 				rgTimeout = setTimeout(async () =>
 				{
 					// If ripgrep binary wasn't found, use the Node fallback immediately
 					if(!rgPath)
 					{
-						const fallbackItems = await fallbackTextSearch(cachedFilesData, searchQuery, 100);
+						const fallbackItems = await fallbackTextSearch(cachedFilesData, searchQuery, 100)
 						if(quickPick.value === value)
 						{
-							quickPick.busy = false;
+							quickPick.busy = false
 							quickPick.items = fallbackItems.length > 0
-								? [{ label: "Text Matches", kind: vscode.QuickPickItemKind.Separator }, ...fallbackItems]
-								: [];
+								? [{ label: 'Text Matches', kind: vscode.QuickPickItemKind.Separator }, ...fallbackItems]
+								: []
 						}
-						return;
+						return
 					}
 
 					const args = [
-						"--vimgrep",
-						"--fixed-strings",
-						"--smart-case",
-						"--max-count", "50",
-						"--max-columns", "300"
-					];
+						'--vimgrep',
+						'--fixed-strings',
+						'--smart-case',
+						'--max-count', '50',
+						'--max-columns', '300'
+					]
 
 					for(const pattern of excludePatterns)
 					{
-						args.push("-g", `!${pattern}`);
+						args.push('-g', `!${pattern}`)
 					}
-					args.push("--", searchQuery, ".");
+					args.push('--', searchQuery, '.')
 
-					const proc = cp.spawn(rgPath, args, { cwd: rootPath });
-					currentRgProcess = proc;
+					const proc = cp.spawn(rgPath, args, { cwd: rootPath })
+					currentRgProcess = proc
 
-					let stdout = "";
-					let killedEarly = false;
+					let stdout = ''
+					let killedEarly = false
 
-					proc.stdout.on("data", data =>
+					proc.stdout.on('data', data =>
 					{
-						stdout += data.toString();
-						if(!killedEarly && stdout.split("\n").length > 100)
+						stdout += data.toString()
+						if(!killedEarly && stdout.split('\n').length > 100)
 						{
-							killedEarly = true;
-							proc.kill();
+							killedEarly = true
+							proc.kill()
 						}
-					});
+					})
 
-					proc.on("close", async (code) =>
+					proc.on('close', async (code) =>
 					{
-						if(currentRgProcess !== proc) return;
+						if(currentRgProcess !== proc) return
 
-						const lines = stdout.split(/\r?\n/).filter(Boolean).slice(0, 100);
+						const lines = stdout.split(/\r?\n/).filter(Boolean).slice(0, 100)
 						let textItems = lines.map(line =>
 						{
 							// Match Windows drive letters (e.g. C:\...) or relative paths
-							const match = line.match(/^(.+?):(\d+):(\d+):(.*)$/);
-							if(!match) return null;
+							const match = line.match(/^(.+?):(\d+):(\d+):(.*)$/)
+							if(!match) return null
 
-							const [, file, lineStr, colStr, text] = match;
-							const lineNum = parseInt(lineStr, 10) - 1;
-							const colNum = parseInt(colStr, 10) - 1;
-							const normalizedFile = file.replace(/^\.[\\/]/, "").replace(/\\/g, "/");
+							const [, file, lineStr, colStr, text] = match
+							const lineNum = parseInt(lineStr, 10) - 1
+							const colNum = parseInt(colStr, 10) - 1
+							const normalizedFile = file.replace(/^\.[\\/]/, '').replace(/\\/g, '/')
 
 							return {
 								label: `$(search) [Text] ${text.trim()}`,
@@ -299,242 +299,242 @@ function activate(context)
 									col: colNum,
 									len: searchQuery.length
 								}
-							};
-						}).filter(Boolean);
+							}
+						}).filter(Boolean)
 
 						// If rg failed or returned 0 items because of glob/path issues, try fallback
 						if(textItems.length === 0 && code !== 0 && code !== 1)
 						{
-							textItems = await fallbackTextSearch(cachedFilesData, searchQuery, 100);
+							textItems = await fallbackTextSearch(cachedFilesData, searchQuery, 100)
 						}
 
 						if(quickPick.value === value)
 						{
-							quickPick.busy = false;
+							quickPick.busy = false
 							quickPick.items = textItems.length > 0
-								? [{ label: "Text Matches", kind: vscode.QuickPickItemKind.Separator }, ...textItems]
-								: [];
+								? [{ label: 'Text Matches', kind: vscode.QuickPickItemKind.Separator }, ...textItems]
+								: []
 						}
-					});
+					})
 
-					proc.on("error", async (err) =>
+					proc.on('error', async (err) =>
 					{
-						console.error("[CustomSearch] Ripgrep error, using fallback:", err);
-						const fallbackItems = await fallbackTextSearch(cachedFilesData, searchQuery, 100);
+						console.error('[CustomSearch] Ripgrep error, using fallback:', err)
+						const fallbackItems = await fallbackTextSearch(cachedFilesData, searchQuery, 100)
 						if(quickPick.value === value)
 						{
-							quickPick.busy = false;
+							quickPick.busy = false
 							quickPick.items = fallbackItems.length > 0
-								? [{ label: "Text Matches", kind: vscode.QuickPickItemKind.Separator }, ...fallbackItems]
-								: [];
+								? [{ label: 'Text Matches', kind: vscode.QuickPickItemKind.Separator }, ...fallbackItems]
+								: []
 						}
-					});
-				}, 120);
+					})
+				}, 120)
 
-				return;
+				return
 			}
 			// --- END: ? Text Search Mode ---
 
-			const terms = value.trim().toLowerCase().split(/\s+/).filter(Boolean);
-			const rawQueryWithoutSpaces = value.trim().toLowerCase().replace(/\s+/g, "");
+			const terms = value.trim().toLowerCase().split(/\s+/).filter(Boolean)
+			const rawQueryWithoutSpaces = value.trim().toLowerCase().replace(/\s+/g, '')
 
 			// 1. Process files with space-separated substring matching
 			const filteredFiles = cachedFilesData
 				.map(file =>
 				{
-					if(terms.length === 0) return { ...file, matched: true, exactScore: 0 };
+					if(terms.length === 0) return { ...file, matched: true, exactScore: 0 }
 
-					const lowerName = file.lowerFileName;
-					const lowerPath = file.lowerRelativePath;
+					const lowerName = file.lowerFileName
+					const lowerPath = file.lowerRelativePath
 
 					// Every space-separated word must appear in the file name or relative path
-					const allTermsMatch = terms.every(term => lowerPath.includes(term));
-					if(!allTermsMatch) return { ...file, matched: false };
+					const allTermsMatch = terms.every(term => lowerPath.includes(term))
+					if(!allTermsMatch) return { ...file, matched: false }
 
-					let exactScore = 0;
-					if(lowerName === rawQueryWithoutSpaces) exactScore = 5;
-					else if(lowerName.startsWith(rawQueryWithoutSpaces)) exactScore = 4;
-					else if(lowerName.includes(rawQueryWithoutSpaces)) exactScore = 3;
-					else if(terms.every(term => lowerName.includes(term))) exactScore = 2;
-					else exactScore = 1;
+					let exactScore = 0
+					if(lowerName === rawQueryWithoutSpaces) exactScore = 5
+					else if(lowerName.startsWith(rawQueryWithoutSpaces)) exactScore = 4
+					else if(lowerName.includes(rawQueryWithoutSpaces)) exactScore = 3
+					else if(terms.every(term => lowerName.includes(term))) exactScore = 2
+					else exactScore = 1
 
-					return { ...file, matched: true, exactScore };
+					return { ...file, matched: true, exactScore }
 				})
 				.filter(f => f.matched)
 				.sort((a, b) =>
 				{
-					if(a.exactScore !== b.exactScore) return b.exactScore - a.exactScore;
+					if(a.exactScore !== b.exactScore) return b.exactScore - a.exactScore
 
-					const priorityA = highPriorityExts.has(a.ext) ? 1 : (lowPriorityExts.has(a.ext) ? -1 : 0);
-					const priorityB = highPriorityExts.has(b.ext) ? 1 : (lowPriorityExts.has(b.ext) ? -1 : 0);
+					const priorityA = highPriorityExts.has(a.ext) ? 1 : (lowPriorityExts.has(a.ext) ? -1 : 0)
+					const priorityB = highPriorityExts.has(b.ext) ? 1 : (lowPriorityExts.has(b.ext) ? -1 : 0)
 
-					if(priorityA !== priorityB) return priorityB - priorityA;
-					return b.version - a.version;
+					if(priorityA !== priorityB) return priorityB - priorityA
+					return b.version - a.version
 				})
-				.slice(0, 100);
+				.slice(0, 100)
 
 			const fileItems = filteredFiles.map(file => ({
 				label: `$(file) [File] ${file.fileName}`,
 				description: file.relativePath,
 				alwaysShow: true,
 				fileUri: file.uri
-			}));
+			}))
 
 			// Keep previous file results if current query yields no file matches
 			if(fileItems.length > 0)
 			{
-				lastFileItems = fileItems;
+				lastFileItems = fileItems
 			}
-			const activeFileItems = fileItems.length > 0 ? fileItems : lastFileItems;
+			const activeFileItems = fileItems.length > 0 ? fileItems : lastFileItems
 
 			if(activeFileItems.length > 0)
 			{
 				quickPick.items = [
-					{ label: "Files", kind: vscode.QuickPickItemKind.Separator },
+					{ label: 'Files', kind: vscode.QuickPickItemKind.Separator },
 					...activeFileItems
-				];
+				]
 			}
 			else
 			{
-				quickPick.items = [];
+				quickPick.items = []
 			}
 
 			// 2. Fetch and apply the same scoring logic to symbols
 			if(terms.length > 0)
 			{
-				quickPick.busy = true;
+				quickPick.busy = true
 				try
 				{
-					const providerQuery = terms[0] || "";
+					const providerQuery = terms[0] || ''
 					const symbols = await vscode.commands.executeCommand(
-						"vscode.executeWorkspaceSymbolProvider",
+						'vscode.executeWorkspaceSymbolProvider',
 						providerQuery
-					);
+					)
 
 					if(symbols && symbols.length > 0)
 					{
 						const filteredSymbols = symbols
 							.map(sym =>
 							{
-								const relativePath = vscode.workspace.asRelativePath(sym.location.uri);
-								const lowerName = sym.name.toLowerCase();
-								const searchableTarget = `${lowerName} ${(sym.containerName || "").toLowerCase()} ${relativePath.toLowerCase()}`;
+								const relativePath = vscode.workspace.asRelativePath(sym.location.uri)
+								const lowerName = sym.name.toLowerCase()
+								const searchableTarget = `${lowerName} ${(sym.containerName || '').toLowerCase()} ${relativePath.toLowerCase()}`
 
-								const allTermsMatch = terms.every(term => searchableTarget.includes(term));
-								if(!allTermsMatch) return { sym, matched: false };
+								const allTermsMatch = terms.every(term => searchableTarget.includes(term))
+								if(!allTermsMatch) return { sym, matched: false }
 
-								let exactScore = 0;
-								if(lowerName === rawQueryWithoutSpaces) exactScore = 5;
-								else if(lowerName.startsWith(rawQueryWithoutSpaces)) exactScore = 4;
-								else if(lowerName.includes(rawQueryWithoutSpaces)) exactScore = 3;
-								else if(terms.every(term => lowerName.includes(term))) exactScore = 2;
-								else exactScore = 1;
+								let exactScore = 0
+								if(lowerName === rawQueryWithoutSpaces) exactScore = 5
+								else if(lowerName.startsWith(rawQueryWithoutSpaces)) exactScore = 4
+								else if(lowerName.includes(rawQueryWithoutSpaces)) exactScore = 3
+								else if(terms.every(term => lowerName.includes(term))) exactScore = 2
+								else exactScore = 1
 
 								return {
 									sym,
 									relativePath,
 									exactScore,
 									matched: true
-								};
+								}
 							})
 							.filter(item => item.matched)
 							.sort((a, b) =>
 							{
-								if(a.exactScore !== b.exactScore) return b.exactScore - a.exactScore;
+								if(a.exactScore !== b.exactScore) return b.exactScore - a.exactScore
 
-								return getVersionNumber(b.relativePath) - getVersionNumber(a.relativePath);
+								return getVersionNumber(b.relativePath) - getVersionNumber(a.relativePath)
 							})
-							.slice(0, 100);
+							.slice(0, 100)
 
 						const symbolItems = filteredSymbols.map(item =>
 						{
-							const symInfo = getSymbolInfo(item.sym.kind);
+							const symInfo = getSymbolInfo(item.sym.kind)
 							return {
 								label: `$(${symInfo.icon}) [${symInfo.name}] ${item.sym.name}`,
 								description: item.relativePath,
 								detail: item.sym.containerName,
 								alwaysShow: true,
 								symbolData: item.sym
-							};
-						});
+							}
+						})
 
 						if(quickPick.value === value)
 						{
-							const combined = [];
-							if(activeFileItems.length > 0)
-							{
-								combined.push({ label: "Files", kind: vscode.QuickPickItemKind.Separator });
-								combined.push(...activeFileItems);
-							}
+							const combined = []
 							if(symbolItems.length > 0)
 							{
-								combined.push({ label: "Symbols", kind: vscode.QuickPickItemKind.Separator });
-								combined.push(...symbolItems);
+								combined.push({ label: 'Symbols', kind: vscode.QuickPickItemKind.Separator })
+								combined.push(...symbolItems)
 							}
-							quickPick.items = combined;
+							if(activeFileItems.length > 0)
+							{
+								combined.push({ label: 'Files', kind: vscode.QuickPickItemKind.Separator })
+								combined.push(...activeFileItems)
+							}
+							quickPick.items = combined
 						}
 					}
 				}
 				catch(err)
 				{
-					console.error("[CustomSearch] Symbol search error:", err);
+					console.error('[CustomSearch] Symbol search error:', err)
 				}
 				finally
 				{
 					if(quickPick.value === value)
 					{
-						quickPick.busy = false;
+						quickPick.busy = false
 					}
 				}
 			}
-		});
+		})
 
 		quickPick.onDidAccept(async () =>
 		{
-			const selection = quickPick.selectedItems[0];
+			const selection = quickPick.selectedItems[0]
 			if(selection)
 			{
 				if(selection.fileUri)
 				{
-					const doc = await vscode.workspace.openTextDocument(selection.fileUri);
-					await vscode.window.showTextDocument(doc);
+					const doc = await vscode.workspace.openTextDocument(selection.fileUri)
+					await vscode.window.showTextDocument(doc)
 				}
 				else if(selection.symbolData)
 				{
-					const doc = await vscode.workspace.openTextDocument(selection.symbolData.location.uri);
-					const editor = await vscode.window.showTextDocument(doc);
-					const range = selection.symbolData.location.range;
+					const doc = await vscode.workspace.openTextDocument(selection.symbolData.location.uri)
+					const editor = await vscode.window.showTextDocument(doc)
+					const range = selection.symbolData.location.range
 
-					editor.selection = new vscode.Selection(range.start, range.end);
-					editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+					editor.selection = new vscode.Selection(range.start, range.end)
+					editor.revealRange(range, vscode.TextEditorRevealType.InCenter)
 				}
 				else if(selection.textMatchData)
 				{
-					const { uri, line, col, len } = selection.textMatchData;
-					const doc = await vscode.workspace.openTextDocument(uri);
-					const editor = await vscode.window.showTextDocument(doc);
+					const { uri, line, col, len } = selection.textMatchData
+					const doc = await vscode.workspace.openTextDocument(uri)
+					const editor = await vscode.window.showTextDocument(doc)
 
-					const startPos = new vscode.Position(line, col);
-					const endPos = new vscode.Position(line, col + len);
-					const range = new vscode.Range(startPos, endPos);
+					const startPos = new vscode.Position(line, col)
+					const endPos = new vscode.Position(line, col + len)
+					const range = new vscode.Range(startPos, endPos)
 
-					editor.selection = new vscode.Selection(startPos, endPos);
-					editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+					editor.selection = new vscode.Selection(startPos, endPos)
+					editor.revealRange(range, vscode.TextEditorRevealType.InCenter)
 				}
 			}
-			quickPick.hide();
-		});
+			quickPick.hide()
+		})
 
 		quickPick.onDidHide(() =>
 		{
-			if(rgTimeout) clearTimeout(rgTimeout);
-			if(currentRgProcess) currentRgProcess.kill();
-			quickPick.dispose();
-		});
-		quickPick.show();
-	});
+			if(rgTimeout) clearTimeout(rgTimeout)
+			if(currentRgProcess) currentRgProcess.kill()
+			quickPick.dispose()
+		})
+		quickPick.show()
+	})
 
-	context.subscriptions.push(disposable);
+	context.subscriptions.push(disposable)
 }
 
 function deactivate()
@@ -544,4 +544,4 @@ function deactivate()
 module.exports = {
 	activate,
 	deactivate
-};
+}
