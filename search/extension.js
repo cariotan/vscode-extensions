@@ -492,37 +492,33 @@ function activate(context)
 		quickPick.onDidAccept(async () =>
 		{
 			const selection = quickPick.selectedItems[0]
-			if(selection)
-			{
-				if(selection.fileUri)
-				{
-					const doc = await vscode.workspace.openTextDocument(selection.fileUri)
-					await vscode.window.showTextDocument(doc)
-				}
-				else if(selection.symbolData)
-				{
-					const doc = await vscode.workspace.openTextDocument(selection.symbolData.location.uri)
-					const editor = await vscode.window.showTextDocument(doc)
-					const range = selection.symbolData.location.range
-
-					editor.selection = new vscode.Selection(range.start, range.end)
-					editor.revealRange(range, vscode.TextEditorRevealType.InCenter)
-				}
-				else if(selection.textMatchData)
-				{
-					const { uri, line, col, len } = selection.textMatchData
-					const doc = await vscode.workspace.openTextDocument(uri)
-					const editor = await vscode.window.showTextDocument(doc)
-
-					const startPos = new vscode.Position(line, col)
-					const endPos = new vscode.Position(line, col + len)
-					const range = new vscode.Range(startPos, endPos)
-
-					editor.selection = new vscode.Selection(startPos, endPos)
-					editor.revealRange(range, vscode.TextEditorRevealType.InCenter)
-				}
-			}
 			quickPick.hide()
+
+			if(!selection) return
+
+			if(selection.fileUri)
+			{
+				const doc = await vscode.workspace.openTextDocument(selection.fileUri)
+				await vscode.window.showTextDocument(doc)
+			}
+			else if(selection.symbolData)
+			{
+				const range = selection.symbolData.location.range
+				const doc = await vscode.workspace.openTextDocument(selection.symbolData.location.uri)
+				const editor = await vscode.window.showTextDocument(doc, { selection: range })
+				editor.revealRange(range, vscode.TextEditorRevealType.InCenter)
+			}
+			else if(selection.textMatchData)
+			{
+				const { uri, line, col, len } = selection.textMatchData
+				const startPos = new vscode.Position(line, col)
+				const endPos = new vscode.Position(line, col + len)
+				const range = new vscode.Range(startPos, endPos)
+
+				const doc = await vscode.workspace.openTextDocument(uri)
+				const editor = await vscode.window.showTextDocument(doc, { selection: range })
+				editor.revealRange(range, vscode.TextEditorRevealType.InCenter)
+			}
 		})
 
 		quickPick.onDidHide(() =>
