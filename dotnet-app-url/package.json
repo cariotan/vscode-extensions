@@ -1,0 +1,81 @@
+{
+ "name": "dotnet-app-url",
+ "displayName": ".NET Application URL Launcher",
+ "description": "Detects running dotnet watch or C# debug sessions, discovers the applicationUrl, and adds a status bar button to launch it in the browser.",
+ "version": "1.0.2",
+ "publisher": "by-the-grace-of-god",
+ "author": "By The Grace Of God",
+ "engines": {
+  "vscode": "^1.93.0"
+ },
+ "categories": [
+  "Debuggers",
+  "Other"
+ ],
+ "activationEvents": [
+  "workspaceContains:**/*.csproj",
+  "workspaceContains:**/*.fsproj",
+  "workspaceContains:**/*.sln",
+  "workspaceContains:**/*.slnx",
+  "onDebugResolve:coreclr",
+  "onDebugResolve:dotnet",
+  "onStartupFinished"
+ ],
+ "main": "./extension.js",
+ "scripts": {
+  "test": "node --test test/*.test.js",
+  "package": "node -e \"const fs=require('fs'),{execSync}=require('child_process'),p=JSON.parse(fs.readFileSync('package.json','utf8')),a=process.argv[1],v=p.version.split('.').map(Number);p.version=!a||a==='patch'?[v[0],v[1],v[2]+1].join('.'):a==='minor'?[v[0],v[1]+1,0].join('.'):a==='major'?[v[0]+1,0,0].join('.'):a.replace(/^v/,'');fs.writeFileSync('package.json',JSON.stringify(p,null,1)+'\\n');console.log('Version -> '+p.version);execSync('vsce package --no-dependencies --allow-missing-repository --skip-license',{stdio:'inherit'})\"",
+  "install-local": "node -e \"const fs=require('fs'),{execSync}=require('child_process');execSync('npm run package '+(process.argv[1]||''),{stdio:'inherit'});const p=JSON.parse(fs.readFileSync('package.json','utf8'));execSync('code --install-extension '+p.name+'-'+p.version+'.vsix',{stdio:'inherit'})\""
+ },
+ "contributes": {
+  "commands": [
+   {
+    "command": "dotnetAppUrl.open",
+    "title": ".NET App URL: Open Application URL in Browser"
+   },
+   {
+    "command": "dotnetAppUrl.pickAndOpen",
+    "title": ".NET App URL: Pick Application URL to Open"
+   },
+   {
+    "command": "dotnetAppUrl.refresh",
+    "title": ".NET App URL: Refresh Detected Sessions"
+   }
+  ],
+  "configuration": {
+   "title": ".NET Application URL Launcher",
+   "properties": {
+    "dotnetAppUrl.preferHttps": {
+     "type": "boolean",
+     "default": true,
+     "description": "Prefer HTTPS URLs over HTTP URLs when a project exposes multiple endpoints."
+    },
+    "dotnetAppUrl.enableProcessPolling": {
+     "type": "boolean",
+     "default": true,
+     "description": "Poll OS processes to detect dotnet watch running outside VS Code shell integration (e.g. external terminals or tasks without shell integration)."
+    },
+    "dotnetAppUrl.pollIntervalMs": {
+     "type": "number",
+     "default": 2500,
+     "minimum": 1000,
+     "description": "Polling interval in milliseconds for external dotnet watch detection."
+    },
+    "dotnetAppUrl.statusBarAlignment": {
+     "type": "string",
+     "enum": [
+      "left",
+      "right"
+     ],
+     "default": "left",
+     "description": "Alignment of the application URL button in the VS Code status bar."
+    },
+    "dotnetAppUrl.statusBarPriority": {
+     "type": "number",
+     "default": 100,
+     "description": "Priority order of the status bar item."
+    }
+   }
+  }
+ }
+}
