@@ -2,7 +2,9 @@
  "name": "double-quotes",
  "displayName": "Double Quotes",
  "description": "Converts HTML attribute double quotes to single quotes",
- "version": "0.0.3",
+ "version": "0.0.4",
+ "publisher": "by-the-grace-of-god",
+ "author": "By The Grace Of God",
  "engines": {
   "vscode": "^1.85.0"
  },

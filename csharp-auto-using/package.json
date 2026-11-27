@@ -1,7 +1,9 @@
 {
  "name": "csharp-auto-using",
  "displayName": "C# Auto Using",
- "version": "1.0.1",
+ "version": "1.0.2",
+ "publisher": "by-the-grace-of-god",
+ "author": "By The Grace Of God",
  "engines": {
   "vscode": "^1.85.0"
  },

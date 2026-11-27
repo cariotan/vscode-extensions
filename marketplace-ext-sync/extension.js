@@ -265,11 +265,43 @@ function getInstalledFromDisk()
 		})
 }
 
+function isExtensionIgnored(extId, ignoredRules)
+{
+	if(!Array.isArray(ignoredRules) || ignoredRules.length === 0)
+	{
+		return false
+	}
+	const id = extId.toLowerCase()
+	const publisher = id.split('.')[0]
+	for(const rawRule of ignoredRules)
+	{
+		const rule = String(rawRule || '').trim().toLowerCase()
+		if(!rule)
+		{
+			continue
+		}
+		if(rule.endsWith('*'))
+		{
+			const prefix = rule.slice(0, -1)
+			if(publisher.startsWith(prefix) || id.startsWith(prefix))
+			{
+				return true
+			}
+		}
+		else if(publisher === rule || id === rule)
+		{
+			return true
+		}
+	}
+	return false
+}
+
 async function syncMarketplaceExtensions(output)
 {
 	const config = vscode.workspace.getConfiguration('marketplaceExtSync')
 	const folderPath = (config.get('folderPath') || '').trim()
 	const installOutdated = config.get('installOutdated', true)
+	const ignoredPublishers = config.get('ignoredPublishers', ['ms-dotnettools'])
 
 	if(!folderPath)
 	{
@@ -291,6 +323,23 @@ async function syncMarketplaceExtensions(output)
 
 	output.clear()
 	output.appendLine(`[${new Date().toLocaleTimeString()}] Scanning ${installedList.length} installed extension(s)...`)
+
+	const activeList = []
+	for(const ext of installedList)
+	{
+		if(isExtensionIgnored(ext.id, ignoredPublishers))
+		{
+			output.appendLine(`Skipped (ignored): ${ext.id}@${ext.version}`)
+			continue
+		}
+		activeList.push(ext)
+	}
+
+	if(activeList.length === 0)
+	{
+		vscode.window.showInformationMessage('No non-ignored installed VS Code extensions to sync')
+		return
+	}
 
 	const existingById = new Map()
 	for(const filePath of findVsixFiles(folderPath))
@@ -334,9 +383,9 @@ async function syncMarketplaceExtensions(output)
 				const resp = await postJson(GALLERY_URL, {
 					filters: [
 						{
-							criteria: installedList.map(e => ({ filterType: 7, value: e.id })),
+							criteria: activeList.map(e => ({ filterType: 7, value: e.id })),
 							pageNumber: 1,
-							pageSize: Math.max(50, installedList.length)
+							pageSize: Math.max(50, activeList.length)
 						}
 					],
 					flags: 0x1 | 0x2 | 0x10 | 0x80
@@ -353,8 +402,7 @@ async function syncMarketplaceExtensions(output)
 				return
 			}
 
-
-			for(const ext of installedList)
+			for(const ext of activeList)
 			{
 				if(token.isCancellationRequested)
 				{

@@ -1,7 +1,9 @@
 {
  "name": "search",
  "displayName": "Search",
- "version": "0.0.29",
+ "version": "0.0.30",
+ "publisher": "by-the-grace-of-god",
+ "author": "By The Grace Of God",
  "engines": {
   "vscode": "^1.80.0"
  },

@@ -2,8 +2,9 @@
  "name": "marketplace-ext-sync",
  "displayName": "Marketplace Extension Sync",
  "description": "Downloads missing or updated Marketplace .vsix packages for installed extensions and installs outdated ones",
- "version": "1.0.0",
- "publisher": "local",
+ "version": "1.0.2",
+ "publisher": "by-the-grace-of-god",
+ "author": "By The Grace Of God",
  "engines": {
   "vscode": "^1.85.0"
  },
@@ -39,6 +40,16 @@
      "type": "boolean",
      "default": true,
      "description": "Show a Sync Marketplace Exts button in the status bar"
+    },
+    "marketplaceExtSync.ignoredPublishers": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "default": [
+      "ms-dotnettools"
+     ],
+     "description": "Publisher names (or full extension IDs) to ignore when syncing Marketplace extensions"
     }
    }
   }

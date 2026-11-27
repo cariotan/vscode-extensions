@@ -2,8 +2,9 @@
  "name": "collapse-to-tab",
  "displayName": "Collapse To Tab",
  "description": "When 4 spaces or 4 tabs occur in a row, collapse them into a single tab",
- "version": "0.0.3",
- "publisher": "your-name",
+ "version": "0.0.4",
+ "publisher": "by-the-grace-of-god",
+ "author": "By The Grace Of God",
  "engines": {
   "vscode": "^1.90.0"
  },
