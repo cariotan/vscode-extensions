@@ -1,7 +1,7 @@
 {
- "name": "custom-quick-open",
- "displayName": "Custom Quick Open",
- "version": "0.0.28",
+ "name": "search",
+ "displayName": "Search",
+ "version": "0.0.29",
  "engines": {
   "vscode": "^1.80.0"
  },

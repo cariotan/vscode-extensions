@@ -26,7 +26,7 @@
    "properties": {
     "localExtUpdater.folderPath": {
      "type": "string",
-     "default": "",
+     "default": "C:\\Dev\\vscode-extensions",
      "description": "Path to the folder containing your custom .vsix files"
     }
    }

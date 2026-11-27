@@ -1,8 +1,8 @@
 {
- "name": "html-quotes-converter",
- "displayName": "HTML Quotes Converter",
+ "name": "double-quotes",
+ "displayName": "Double Quotes",
  "description": "Converts HTML attribute double quotes to single quotes",
- "version": "0.0.2",
+ "version": "0.0.3",
  "engines": {
   "vscode": "^1.85.0"
  },

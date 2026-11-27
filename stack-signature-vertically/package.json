@@ -1,33 +1,33 @@
 {
-	"name": "signature-stacker",
-	"displayName": "Signature Stacker",
-	"version": "1.0.2",
-	"engines": {
-		"vscode": "^1.60.0"
-	},
-	"main": "./extension.js",
-	"activationEvents": [
-		"onCommand:extension.formatSignatureVertical"
-	],
-	"scripts": {
-		"package": "node -e \"const fs=require('fs'),{execSync}=require('child_process'),p=JSON.parse(fs.readFileSync('package.json','utf8')),a=process.argv[1],v=p.version.split('.').map(Number);p.version=!a||a==='patch'?[v[0],v[1],v[2]+1].join('.'):a==='minor'?[v[0],v[1]+1,0].join('.'):a==='major'?[v[0]+1,0,0].join('.'):a.replace(/^v/,'');fs.writeFileSync('package.json',JSON.stringify(p,null,1)+'\\n');console.log('Version -> '+p.version);execSync('vsce package --no-dependencies --allow-missing-repository --skip-license',{stdio:'inherit'})\"",
-		"install-local": "node -e \"const fs=require('fs'),{execSync}=require('child_process');execSync('npm run package '+(process.argv[1]||''),{stdio:'inherit'});const p=JSON.parse(fs.readFileSync('package.json','utf8'));execSync('code --install-extension '+p.name+'-'+p.version+'.vsix',{stdio:'inherit'})\""
-	},
-	"contributes": {
-		"commands": [
-			{
-				"command": "extension.formatSignatureVertical",
-				"title": "Stack Signature Vertically"
-			}
-		],
-		"menus": {
-			"editor/context": [
-				{
-					"command": "extension.formatSignatureVertical",
-					"group": "modify",
-					"when": "editorTextFocus"
-				}
-			]
-		}
-	}
+ "name": "stack-signature-vertically",
+ "displayName": "Stack Signature Vertically",
+ "version": "1.0.3",
+ "engines": {
+  "vscode": "^1.60.0"
+ },
+ "main": "./extension.js",
+ "activationEvents": [
+  "onCommand:extension.formatSignatureVertical"
+ ],
+ "scripts": {
+  "package": "node -e \"const fs=require('fs'),{execSync}=require('child_process'),p=JSON.parse(fs.readFileSync('package.json','utf8')),a=process.argv[1],v=p.version.split('.').map(Number);p.version=!a||a==='patch'?[v[0],v[1],v[2]+1].join('.'):a==='minor'?[v[0],v[1]+1,0].join('.'):a==='major'?[v[0]+1,0,0].join('.'):a.replace(/^v/,'');fs.writeFileSync('package.json',JSON.stringify(p,null,1)+'\\n');console.log('Version -> '+p.version);execSync('vsce package --no-dependencies --allow-missing-repository --skip-license',{stdio:'inherit'})\"",
+  "install-local": "node -e \"const fs=require('fs'),{execSync}=require('child_process');execSync('npm run package '+(process.argv[1]||''),{stdio:'inherit'});const p=JSON.parse(fs.readFileSync('package.json','utf8'));execSync('code --install-extension '+p.name+'-'+p.version+'.vsix',{stdio:'inherit'})\""
+ },
+ "contributes": {
+  "commands": [
+   {
+    "command": "extension.formatSignatureVertical",
+    "title": "Stack Signature Vertically"
+   }
+  ],
+  "menus": {
+   "editor/context": [
+    {
+     "command": "extension.formatSignatureVertical",
+     "group": "modify",
+     "when": "editorTextFocus"
+    }
+   ]
+  }
+ }
 }
