@@ -2,7 +2,7 @@
  "name": "stack-attributes",
  "displayName": "Stack Attributes",
  "description": "Vertically stacks HTML attributes with proper indentation",
- "version": "1.0.8",
+ "version": "1.0.9",
  "publisher": "by-the-grace-of-god",
  "author": "By The Grace Of God",
  "engines": {

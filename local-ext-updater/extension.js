@@ -1,5 +1,6 @@
 const vscode = require('vscode')
 const fs = require('fs')
+const os = require('os')
 const path = require('path')
 const zlib = require('zlib')
 
@@ -123,7 +124,119 @@ function readVsixMeta(filePath)
 	}
 }
 
-async function updateLocalExtensions()
+function readExtensionsManifest(manifestPath, extensionsDir)
+{
+	if(!fs.existsSync(manifestPath))
+	{
+		return null
+	}
+	try
+	{
+		const entries = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+		if(!Array.isArray(entries))
+		{
+			return null
+		}
+		const result = []
+		for(const entry of entries)
+		{
+			const id = entry?.identifier?.id?.toLowerCase()
+			const version = entry?.version
+			if(!id || !version)
+			{
+				continue
+			}
+			if(extensionsDir && entry.relativeLocation)
+			{
+				if(!fs.existsSync(path.join(extensionsDir, entry.relativeLocation)))
+				{
+					continue
+				}
+			}
+			result.push({
+				id,
+				version,
+				isApplicationScoped: Boolean(entry?.metadata?.isApplicationScoped)
+			})
+		}
+		return result
+	}
+	catch(err)
+	{
+		console.error(`Failed to read ${manifestPath}:`, err)
+		return null
+	}
+}
+
+function getInstalledExtensions(context)
+{
+	const installed = new Map()
+	const record = (id, version) =>
+	{
+		const existing = installed.get(id)
+		if(!existing || isNewer(version, existing))
+		{
+			installed.set(id, version)
+		}
+	}
+
+	for(const ext of vscode.extensions.all)
+	{
+		if(ext.packageJSON?.version)
+		{
+			record(ext.id.toLowerCase(), ext.packageJSON.version)
+		}
+	}
+
+	const siblingDir = context?.extensionPath ? path.dirname(context.extensionPath) : null
+	const extensionsDir = siblingDir && fs.existsSync(path.join(siblingDir, 'extensions.json'))
+		? siblingDir
+		: path.join(os.homedir(), '.vscode', 'extensions')
+
+	const defaultManifestPath = path.join(extensionsDir, 'extensions.json')
+	const profileDir = context?.globalStorageUri
+		? path.dirname(path.dirname(context.globalStorageUri.fsPath))
+		: null
+	const profileManifestPath = profileDir ? path.join(profileDir, 'extensions.json') : null
+
+	if(profileManifestPath && fs.existsSync(profileManifestPath))
+	{
+		const profileEntries = readExtensionsManifest(profileManifestPath, extensionsDir)
+		if(profileEntries)
+		{
+			for(const entry of profileEntries)
+			{
+				record(entry.id, entry.version)
+			}
+		}
+		const defaultEntries = readExtensionsManifest(defaultManifestPath, extensionsDir)
+		if(defaultEntries)
+		{
+			for(const entry of defaultEntries)
+			{
+				if(entry.isApplicationScoped)
+				{
+					record(entry.id, entry.version)
+				}
+			}
+		}
+	}
+	else
+	{
+		const defaultEntries = readExtensionsManifest(defaultManifestPath, extensionsDir)
+		if(defaultEntries)
+		{
+			for(const entry of defaultEntries)
+			{
+				record(entry.id, entry.version)
+			}
+		}
+	}
+
+	return installed
+}
+
+async function updateLocalExtensions(context)
 {
 	const config = vscode.workspace.getConfiguration('localExtUpdater')
 	const folderPath = config.get('folderPath')
@@ -163,11 +276,7 @@ async function updateLocalExtensions()
 		}
 	}
 
-	const installed = new Map()
-	for(const ext of vscode.extensions.all)
-	{
-		installed.set(ext.id.toLowerCase(), ext.packageJSON.version)
-	}
+	const installed = getInstalledExtensions(context)
 
 	const updated = []
 	await vscode.window.withProgress(
@@ -212,7 +321,7 @@ async function updateLocalExtensions()
 function activate(context)
 {
 	const cmdId = 'localExtUpdater.update'
-	const disposable = vscode.commands.registerCommand(cmdId, updateLocalExtensions)
+	const disposable = vscode.commands.registerCommand(cmdId, () => updateLocalExtensions(context))
 
 	const button = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100)
 	button.text = '$(sync) Update Local Exts'

@@ -29,32 +29,31 @@ function activate(context) {
 
 		const fullMatch = targetMatch[0];
 		const tagName = targetMatch[1];
-		let attributesString = targetMatch[2];
+		const attributesString = targetMatch[2];
 		const innerContent = targetMatch[3] || "";
 		const closingTag = targetMatch[4] || "";
-
-		const isSelfClosing = attributesString.trim().endsWith('/');
-		if (isSelfClosing) {
-			attributesString = attributesString.replace(/\/$/, '');
-		}
 
 		const baseIndent = lineText.match(/^\s*/)[0];
 		const attrIndent = baseIndent + '\t';
 
-		const attrRegex = /([^\s=]+)(?:=(["'])(.*?)\2)?/g;
+		const attrRegex = /([^\s=/]+)(?:\s*=\s*(?:(["'])(.*?)\2|([^\s]+)))?/g;
 		let attrMatch;
+		let lastIndex = 0;
 		const valuelessAttrs = [];
 		const valueAttrs = [];
 
 		while ((attrMatch = attrRegex.exec(attributesString)) !== null) {
+			lastIndex = attrRegex.lastIndex;
 			const attrName = attrMatch[1];
-			const hasValue = attrMatch[2] !== undefined;
+			const hasValue = attrMatch[2] !== undefined || attrMatch[4] !== undefined;
 			if (hasValue) {
 				valueAttrs.push(attrMatch[0]);
 			} else {
 				valuelessAttrs.push(attrName);
 			}
 		}
+
+		const isSelfClosing = attributesString.slice(lastIndex).trim() === '/';
 
 		let formatted = `<${tagName}`;
 		if (valuelessAttrs.length > 0) {

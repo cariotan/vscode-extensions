@@ -1,7 +1,7 @@
 {
  "name": "local-ext-updater",
  "displayName": "Local Extension Updater",
- "version": "1.0.5",
+ "version": "1.0.6",
  "publisher": "by-the-grace-of-god",
  "author": "By The Grace Of God",
  "engines": {
