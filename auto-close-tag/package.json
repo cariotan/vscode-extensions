@@ -2,7 +2,7 @@
  "name": "auto-close-tag",
  "displayName": "Auto Close Tag",
  "description": "Closes HTML tags on >, completely ignores /",
- "version": "1.0.5",
+ "version": "1.0.6",
  "publisher": "by-the-grace-of-god",
  "author": "By The Grace Of God",
  "engines": {
