@@ -6,6 +6,7 @@
  "publisher": "by-the-grace-of-god",
  "author": "By The Grace Of God",
  "scripts": {
+  "test": "node --test",
   "package": "node -e \"const fs=require('fs'),{execSync}=require('child_process'),p=JSON.parse(fs.readFileSync('package.json','utf8')),a=process.argv[1],v=p.version.split('.').map(Number);p.version=!a||a==='patch'?[v[0],v[1],v[2]+1].join('.'):a==='minor'?[v[0],v[1]+1,0].join('.'):a==='major'?[v[0]+1,0,0].join('.'):a.replace(/^v/,'');fs.writeFileSync('package.json',JSON.stringify(p,null,1)+'\\n');console.log('Version -> '+p.version);execSync('vsce package --no-dependencies --allow-missing-repository --skip-license',{stdio:'inherit'})\"",
   "install-local": "node -e \"const fs=require('fs'),{execSync}=require('child_process');execSync('npm run package '+(process.argv[1]||''),{stdio:'inherit'});const p=JSON.parse(fs.readFileSync('package.json','utf8'));execSync('code --install-extension '+p.name+'-'+p.version+'.vsix',{stdio:'inherit'})\""
  },
@@ -13,7 +14,53 @@
   "vscode": "^1.93.0"
  },
  "activationEvents": [
-  "onStartupFinished"
+  "*"
  ],
- "main": "./extension.js"
+ "main": "./extension.js",
+ "contributes": {
+  "configuration": {
+   "title": "Auto Reveal Exception",
+   "properties": {
+    "autoRevealException.patterns": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "default": [
+      "exception",
+      "error",
+      "traceback",
+      "fatal",
+      "unhandled",
+      "\\bpanic:",
+      "panicked at",
+      "\\berr!",
+      "segmentation fault"
+     ],
+     "description": "Regular expression patterns matched against terminal output to reveal the terminal."
+    },
+    "autoRevealException.caseSensitive": {
+     "type": "boolean",
+     "default": false,
+     "description": "Whether pattern matching is case-sensitive."
+    },
+    "autoRevealException.revealOnNonZeroExitCode": {
+     "type": "boolean",
+     "default": true,
+     "description": "Reveal the terminal when a command finishes with a non-zero exit code (excluding Ctrl+C interrupts)."
+    },
+    "autoRevealException.preserveFocus": {
+     "type": "boolean",
+     "default": true,
+     "description": "Keep focus in the current editor instead of focusing the revealed terminal."
+    },
+    "autoRevealException.cooldownMs": {
+     "type": "number",
+     "default": 500,
+     "minimum": 0,
+     "description": "Minimum interval in milliseconds between consecutive reveal calls on the same terminal."
+    }
+   }
+  }
+ }
 }
