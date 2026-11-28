@@ -2,7 +2,7 @@
  "name": "auto-reveal-exception",
  "displayName": "Auto Reveal Exception",
  "description": "Auto reveals the terminal when an exception message is detected.",
- "version": "0.0.4",
+ "version": "0.0.6",
  "publisher": "by-the-grace-of-god",
  "author": "By The Grace Of God",
  "scripts": {

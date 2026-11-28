@@ -7,7 +7,7 @@ function activate(context)
 		const stream = e.execution.read()
 		for await(const data of stream)
 		{
-			if(data.includes('Exception'))
+			if(data.includes('Exception') || data.includes('error'))
 			{
 				e.terminal.show(true)
 			}
